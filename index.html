@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nail Salon Turn Manager</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #fce7f3 0%, #f3e8ff 100%);
+            min-height: 100vh;
+            padding: 16px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .title-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .icon {
+            width: 32px;
+            height: 32px;
+            color: #3b82f6;
+        }
+        h1 {
+            font-size: 24px;
+            color: #1f2937;
+        }
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        .sync-icon {
+            width: 16px;
+            height: 16px;
+        }
+        .sync-icon.synced { color: #10b981; }
+        .sync-icon.saving { color: #3b82f6; animation: pulse 1.5s infinite; }
+        .sync-icon.error { color: #ef4444; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .button-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        button:active {
+            transform: scale(0.95);
+        }
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) {
+            background: #2563eb;
+        }
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #059669;
+        }
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+        .btn-warning:hover {
+            background: #d97706;
+        }
+        .btn-edit {
+            background: #f59e0b;
+            color: white;
+        }
+        .btn-edit:hover {
+            background: #d97706;
+        }
+        .btn-edit.active {
+            background: #10b981;
+        }
+        .btn-edit.active:hover {
+            background: #059669;
+        }
+        button:disabled {
+            background: #e5e7eb;
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+        .icon-btn {
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .next-banner {
+            background: #3b82f6;
+            color: white;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .next-banner p:first-child {
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        .next-banner .name {
+            font-size: 28px;
+            font-weight: bold;
+            margin: 4px 0;
+        }
+        .next-banner .turn {
+            font-size: 20px;
+        }
+        .edit-mode-banner {
+            display: none;
+            margin-bottom: 16px;
+            padding: 16px;
+            background: #fef3c7;
+            border-radius: 8px;
+            border: 2px solid #f59e0b;
+        }
+        .edit-mode-banner.active {
+            display: block;
+        }
+        .edit-mode-banner p {
+            color: #92400e;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .add-employee {
+            display: flex;
+            gap: 8px;
+        }
+        .add-employee input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #f59e0b;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        .add-employee input:focus {
+            outline: none;
+            border-color: #d97706;
+        }
+        .working-count {
+            color: #6b7280;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .employee-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .employee-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px;
+            border-radius: 8px;
+            border: 2px solid #e5e7eb;
+            background: #f9fafb;
+        }
+        .employee-row.working {
+            background: #fef3c7;
+            border-color: #fbbf24;
+        }
+        .employee-name {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .employee-name span {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .employee-name input {
+            flex: 1;
+            font-size: 18px;
+            font-weight: 600;
+            border: 2px solid #3b82f6;
+            border-radius: 6px;
+            padding: 4px 8px;
+        }
+        .edit-btn, .remove-btn {
+            padding: 4px;
+            background: transparent;
+            color: #9ca3af;
+            border: none;
+            cursor: pointer;
+        }
+        .edit-btn:hover {
+            color: #3b82f6;
+        }
+        .remove-btn:hover {
+            color: #ef4444;
+        }
+        .turn-input {
+            width: 80px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #3b82f6;
+            border: 2px solid #93c5fd;
+            border-radius: 8px;
+            padding: 8px;
+        }
+        .turn-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        .working-label {
+            font-size: 16px;
+            font-weight: bold;
+            color: #d97706;
+            padding: 0 12px;
+        }
+        .summary-card {
+            margin-top: 16px;
+        }
+        .summary-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #eff6ff;
+            border-radius: 8px;
+        }
+        .summary-item span:first-child {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .summary-item span:last-child {
+            font-size: 20px;
+            font-weight: bold;
+            color: #3b82f6;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal.show {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            max-width: 400px;
+            width: 90%;
+        }
+        .modal-content h3 {
+            margin-bottom: 16px;
+            font-size: 20px;
+            color: #1f2937;
+        }
+        .modal-content p {
+            margin-bottom: 24px;
+            color: #6b7280;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #1f2937;
+        }
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+        .setup-card {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+        .setup-card h2 {
+            color: #92400e;
+            margin-bottom: 12px;
+        }
+        .setup-card p {
+            color: #78350f;
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        .setup-card code {
+            background: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .setup-card ol {
+            margin-left: 20px;
+            color: #78350f;
+        }
+        .setup-card li {
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card setup-card" id="setupCard">
+            <h2>🔧 Firebase Setup Required</h2>
+            <p><strong>To enable cloud sync, follow these steps:</strong></p>
+            <ol>
+                <li>Go to <a href="https://console.firebase.google.com" target="_blank">Firebase Console</a></li>
+                <li>Create a new project (or use existing)</li>
+                <li>Click "Web" icon and register your app</li>
+                <li>Copy your Firebase config</li>
+                <li>Paste the config in the script section of this HTML file (search for "REPLACE WITH YOUR FIREBASE CONFIG")</li>
+                <li>Enable Firestore Database in Firebase Console</li>
+                <li>Set rules to: <code>allow read, write: if true;</code> (for testing)</li>
+            </ol>
+            <p style="margin-top: 12px;"><strong>Note:</strong> Until configured, the app will work offline using localStorage only.</p>
+        </div>
+
+        <div class="card">
+            <div class="header">
+                <div class="title-group">
+                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                    <div>
+                        <h1>Employee Turns</h1>
+                        <div class="sync-status" id="syncStatus">
+                            <svg class="sync-icon" id="syncIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
+                            </svg>
+                            <span id="syncText">Offline mode</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button class="btn-edit" onclick="toggleEditMode()" id="editModeBtn">Edit</button>
+                    <button class="icon-btn btn-primary" onclick="undo()" id="undoBtn" disabled>
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+                        </svg>
+                    </button>
+                    <button class="icon-btn btn-primary" onclick="redo()" id="redoBtn" disabled>
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6"/>
+                        </svg>
+                    </button>
+                    <button class="btn-danger" onclick="showClearModal()">Clear All</button>
+                </div>
+            </div>
+
+            <div id="nextBanner"></div>
+            
+            <div class="edit-mode-banner" id="editModeBanner">
+                <p>📝 Edit Mode</p>
+                <div class="add-employee">
+                    <input type="text" id="newEmployeeName" placeholder="Enter employee name" onkeypress="if(event.key==='Enter') addEmployee()">
+                    <button class="btn-success" onclick="addEmployee()">
+                        + Add
+                    </button>
+                </div>
+            </div>
+
+            <p class="working-count" id="workingCount"></p>
+            <div class="employee-list" id="employeeList"></div>
+        </div>
+
+        <div class="card summary-card" id="summaryCard" style="display:none;">
+            <h2 style="font-size: 20px; color: #1f2937; margin-bottom: 16px;">Working Today</h2>
+            <div class="summary-list" id="summaryList"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="clearModal">
+        <div class="modal-content">
+            <h3>Clear All?</h3>
+            <p>This will reset all turn numbers and working status. Are you sure?</p>
+            <div class="modal-buttons">
+                <button class="btn-secondary" onclick="hideClearModal()">Cancel</button>
+                <button class="btn-danger" onclick="confirmClearAll()">Yes, Clear All</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        // ========================================
+        // FIREBASE CONFIG - REPLACE WITH YOUR OWN
+        // ========================================
+        const firebaseConfig = {
+            // REPLACE WITH YOUR FIREBASE CONFIG
+            // Get this from Firebase Console > Project Settings > Your apps > Firebase SDK snippet
+            apiKey: "AIzaSyDDtDd7KrMcvPA-1QluxKQvco0sLa_kWdk",
+            authDomain: "nail-salon-d962b.firebaseapp.com",
+            projectId: "nail-salon-d962b",
+            storageBucket: "nail-salon-d962b.firebasestorage.app",
+            messagingSenderId: "Y1076505113914",
+            appId: "1:1076505113914:web:7a0a80d1cd4781357c8c03"
+        };
+
+        // Initialize Firebase
+        let db = null;
+        let firebaseEnabled = false;
+
+        try {
+            if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                firebaseEnabled = true;
+                document.getElementById('setupCard').style.display = 'none';
+                console.log('Firebase initialized successfully');
+            }
+        } catch (error) {
+            console.log('Firebase not configured, using localStorage only');
+        }
+
+        // ========================================
+        // APP STATE
+        // ========================================
+        let employees = [
+            { name: 'Hai', turn: null, status: 'waiting' },
+            { name: 'Jessica', turn: null, status: 'waiting' },
+            { name: 'Tuấn', turn: null, status: 'waiting' },
+            { name: 'Chien', turn: null, status: 'waiting' },
+            { name: 'Queenie', turn: null, status: 'waiting' },
+            { name: 'Ling', turn: null, status: 'waiting' },
+            { name: 'Huyền', turn: null, status: 'waiting' },
+            { name: 'Katey', turn: null, status: 'waiting' },
+            { name: 'Liễu', turn: null, status: 'waiting' },
+            { name: 'Duyên', turn: null, status: 'waiting' },
+            { name: 'Cường', turn: null, status: 'waiting' },
+            { name: 'Chung', turn: null, status: 'waiting' }
+        ];
+        let history = [];
+        let historyIndex = -1;
+        let editingIndex = null;
+        let editMode = false;
+        let syncStatus = 'offline';
+        let lastSync = null;
+
+        // ========================================
+        // INITIALIZATION
+        // ========================================
+        function init() {
+            loadData();
+            if (firebaseEnabled) {
+                // Listen for real-time updates
+                db.collection('nailSalon').doc('data').onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        employees = data.employees || employees;
+                        history = data.history || [employees];
+                        historyIndex = data.historyIndex || 0;
+                        updateSyncStatus('synced');
+                        render();
+                    }
+                }, (error) => {
+                    console.error('Firebase sync error:', error);
+                    updateSyncStatus('error');
+                });
+            }
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('nailSalonData');
+            if (saved) {
+                const data = JSON.parse(saved);
+                employees = data.employees;
+                history = data.history || [employees];
+                historyIndex = data.historyIndex || 0;
+            } else {
+                history = [JSON.parse(JSON.stringify(employees))];
+                historyIndex = 0;
+            }
+            render();
+        }
+
+        async function saveData() {
+            const data = {
+                employees: employees,
+                history: history,
+                historyIndex: historyIndex,
+                lastUpdated: new Date().toISOString()
+            };
+
+            // Always save to localStorage
+            localStorage.setItem('nailSalonData', JSON.stringify(data));
+
+            // Save to Firebase if enabled
+            if (firebaseEnabled) {
+                try {
+                    updateSyncStatus('saving');
+                    await db.collection('nailSalon').doc('data').set(data);
+                    updateSyncStatus('synced');
+                } catch (error) {
+                    console.error('Firebase save error:', error);
+                    updateSyncStatus('error');
+                }
+            }
+        }
+
+        function updateSyncStatus(status) {
+            syncStatus = status;
+            const icon = document.getElementById('syncIcon');
+            const text = document.getElementById('syncStatus');
+            
+            icon.className = 'sync-icon ' + status;
+            
+            if (status === 'synced') {
+                lastSync = new Date();
+                document.getElementById('syncText').textContent = 'Synced ' + lastSync.toLocaleTimeString();
+            } else if (status === 'saving') {
+                document.getElementById('syncText').textContent = 'Saving...';
+            } else if (status === 'error') {
+                document.getElementById('syncText').textContent = 'Sync error';
+            } else {
+                document.getElementById('syncText').textContent = 'Offline mode';
+            }
+        }
+
+        // ========================================
+        // HISTORY MANAGEMENT
+        // ========================================
+        function saveToHistory() {
+            history = history.slice(0, historyIndex + 1);
+            history.push(JSON.parse(JSON.stringify(employees)));
+            historyIndex = history.length - 1;
+            updateButtons();
+            saveData();
+        }
+
+        function undo() {
+            if (historyIndex > 0) {
+                historyIndex--;
+                employees = JSON.parse(JSON.stringify(history[historyIndex]));
+                updateButtons();
+                saveData();
+                render();
+            }
+        }
+
+        function redo() {
+            if (historyIndex < history.length - 1) {
+                historyIndex++;
+                employees = JSON.parse(JSON.stringify(history[historyIndex]));
+                updateButtons();
+                saveData();
+                render();
+            }
+        }
+
+        function updateButtons() {
+            document.getElementById('undoBtn').disabled = historyIndex <= 0;
+            document.getElementById('redoBtn').disabled = historyIndex >= history.length - 1;
+        }
+
+        // ========================================
+        // EMPLOYEE MANAGEMENT
+        // ========================================
+        function setTurn(index, value) {
+            employees[index].turn = value === '' ? null : parseInt(value);
+            saveToHistory();
+            render();
+        }
+
+        function setWorking(index) {
+            employees[index].status = 'working';
+            employees[index].turn = null;
+            saveToHistory();
+            render();
+        }
+
+        function setDone(index) {
+            const maxTurn = Math.max(0, ...employees.map(e => e.turn || 0));
+            employees[index].status = 'waiting';
+            employees[index].turn = maxTurn + 1;
+            saveToHistory();
+            render();
+        }
+
+        function addEmployee() {
+            const input = document.getElementById('newEmployeeName');
+            const name = input.value.trim();
+            if (name) {
+                employees.push({ name: name, turn: null, status: 'waiting' });
+                saveToHistory();
+                render();
+                input.value = '';
+                input.focus();
+            }
+        }
+
+        function removeEmployee(index) {
+            if (confirm(`Remove ${employees[index].name} from the list?`)) {
+                employees.splice(index, 1);
+                saveToHistory();
+                render();
+            }
+        }
+
+        function startEdit(index) {
+            editingIndex = index;
+            render();
+            setTimeout(() => {
+                const input = document.getElementById('edit-' + index);
+                if (input) input.focus();
+            }, 0);
+        }
+
+        function saveEdit(index, value) {
+            if (value.trim()) {
+                employees[index].name = value.trim();
+                saveToHistory();
+            }
+            editingIndex = null;
+            render();
+        }
+
+        function toggleEditMode() {
+            editMode = !editMode;
+            const btn = document.getElementById('editModeBtn');
+            const banner = document.getElementById('editModeBanner');
+            
+            if (editMode) {
+                btn.textContent = 'Done';
+                btn.classList.add('active');
+                banner.classList.add('active');
+            } else {
+                btn.textContent = 'Edit';
+                btn.classList.remove('active');
+                banner.classList.remove('active');
+            }
+            render();
+        }
+
+        function showClearModal() {
+            document.getElementById('clearModal').classList.add('show');
+        }
+
+        function hideClearModal() {
+            document.getElementById('clearModal').classList.remove('show');
+        }
+
+        function confirmClearAll() {
+            employees = employees.map(emp => ({ ...emp, turn: null, status: 'waiting' }));
+            saveToHistory();
+            render();
+            hideClearModal();
+        }
+
+        // ========================================
+        // RENDERING
+        // ========================================
+        function getSortedEmployees() {
+            const waitingWithNumbers = employees.filter(e => e.turn !== null && e.status === 'waiting').sort((a, b) => a.turn - b.turn);
+            const working = employees.filter(e => e.status === 'working');
+            const waitingWithoutNumbers = employees.filter(e => e.turn === null && e.status === 'waiting');
+            return [...waitingWithNumbers, ...working, ...waitingWithoutNumbers];
+        }
+
+        function render() {
+            const sorted = getSortedEmployees();
+            const waitingWithNumbers = employees.filter(e => e.turn !== null && e.status === 'waiting').sort((a, b) => a.turn - b.turn);
+            const working = employees.filter(e => e.status === 'working');
+            const nextEmployee = waitingWithNumbers.length > 0 ? waitingWithNumbers[0] : null;
+
+            // Next banner
+            const nextBanner = document.getElementById('nextBanner');
+            if (nextEmployee) {
+                nextBanner.innerHTML = `
+                    <p>Next Turn:</p>
+                    <p class="name">${nextEmployee.name}</p>
+                    <p class="turn">Turn #${nextEmployee.turn}</p>
+                `;
+                nextBanner.className = 'next-banner';
+                nextBanner.style.display = 'block';
+            } else {
+                nextBanner.style.display = 'none';
+            }
+
+            // Working count
+            document.getElementById('workingCount').textContent = 
+                `Working Today: ${waitingWithNumbers.length + working.length}/${employees.length}`;
+
+            // Employee list
+            const list = document.getElementById('employeeList');
+            list.innerHTML = sorted.map((emp) => {
+                const originalIndex = employees.findIndex(e => e.name === emp.name);
+                const isEditing = editingIndex === originalIndex;
+                
+                return `
+                    <div class="employee-row ${emp.status === 'working' ? 'working' : ''}">
+                        <div class="employee-name">
+                            ${isEditing ? `
+                                <input type="text" id="edit-${originalIndex}" value="${emp.name}" 
+                                    onkeypress="if(event.key==='Enter') saveEdit(${originalIndex}, this.value)"
+                                    onblur="saveEdit(${originalIndex}, this.value)">
+                                <button class="icon-btn btn-success" onclick="saveEdit(${originalIndex}, document.getElementById('edit-${originalIndex}').value)">
+                                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                </button>
+                            ` : `
+                                <span>${emp.name}</span>
+                                ${editMode ? `
+                                    <button class="edit-btn" onclick="startEdit(${originalIndex})">
+                                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                                        </svg>
+                                    </button>
+                                    <button class="remove-btn" onclick="removeEmployee(${originalIndex})">
+                                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                    </button>
+                                ` : ''}
+                            `}
+                        </div>
+                        ${emp.status === 'working' ? `
+                            <span class="working-label">WORKING</span>
+                            <button class="btn-success" onclick="setDone(${originalIndex})">Done</button>
+                        ` : `
+                            <input type="number" class="turn-input" 
+                                value="${emp.turn === null ? '' : emp.turn}" 
+                                placeholder="--"
+                                onchange="setTurn(${originalIndex}, this.value)">
+                            <button class="btn-warning" onclick="setWorking(${originalIndex})">Working</button>
+                        `}
+                    </div>
+                `;
+            }).join('');
+
+            // Summary
+            const summary = [...waitingWithNumbers, ...working];
+            const summaryCard = document.getElementById('summaryCard');
+            const summaryList = document.getElementById('summaryList');
+            
+            if (summary.length > 0) {
+                summaryCard.style.display = 'block';
+                summaryList.innerHTML = summary.map(emp => `
+                    <div class="summary-item">
+                        <span>${emp.name}</span>
+                        <span>${emp.status === 'working' ? 'WORKING' : '#' + emp.turn}</span>
+                    </div>
+                `).join('');
+            } else {
+                summaryCard.style.display = 'none';
+            }
+
+            updateButtons();
+        }
+
+        // Start the app
+        init();
+    </script>
+</body>
+</html>
