@@ -63,6 +63,7 @@
         .sync-icon.synced { color: #10b981; }
         .sync-icon.saving { color: #3b82f6; animation: pulse 1.5s infinite; }
         .sync-icon.error { color: #ef4444; }
+        .sync-icon.offline { color: #9ca3af; }
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
@@ -316,8 +317,21 @@
             color: #1f2937;
         }
         .modal-content p {
-            margin-bottom: 24px;
+            margin-bottom: 12px;
             color: #6b7280;
+            line-height: 1.5;
+        }
+        .modal-content input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 16px;
+        }
+        .modal-content input:focus {
+            outline: none;
+            border-color: #3b82f6;
         }
         .modal-buttons {
             display: flex;
@@ -340,46 +354,68 @@
         }
         .setup-card h2 {
             color: #92400e;
-            margin-bottom: 12px;
+            margin-bottom: 16px;
+            font-size: 22px;
         }
-        .setup-card p {
+        .setup-card h3 {
+            color: #78350f;
+            margin-top: 16px;
+            margin-bottom: 8px;
+            font-size: 18px;
+        }
+        .setup-card p, .setup-card li {
             color: #78350f;
             margin-bottom: 8px;
-            line-height: 1.5;
+            line-height: 1.6;
         }
         .setup-card code {
             background: white;
-            padding: 2px 6px;
+            padding: 2px 8px;
             border-radius: 4px;
-            font-family: monospace;
-            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #dc2626;
         }
         .setup-card ol {
-            margin-left: 20px;
-            color: #78350f;
+            margin-left: 24px;
+            margin-top: 12px;
         }
         .setup-card li {
-            margin-bottom: 8px;
+            margin-bottom: 12px;
+        }
+        .setup-card strong {
+            color: #92400e;
+        }
+        .setup-card a {
+            color: #2563eb;
+            text-decoration: underline;
+        }
+        .code-block {
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 12px 0;
+            line-height: 1.5;
+        }
+        .warning-box {
+            background: #fef2f2;
+            border: 2px solid #fca5a5;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 12px 0;
+        }
+        .warning-box p {
+            color: #991b1b;
+            margin: 0;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="card setup-card" id="setupCard">
-            <h2>🔧 Firebase Setup Required</h2>
-            <p><strong>To enable cloud sync, follow these steps:</strong></p>
-            <ol>
-                <li>Go to <a href="https://console.firebase.google.com" target="_blank">Firebase Console</a></li>
-                <li>Create a new project (or use existing)</li>
-                <li>Click "Web" icon and register your app</li>
-                <li>Copy your Firebase config</li>
-                <li>Paste the config in the script section of this HTML file (search for "REPLACE WITH YOUR FIREBASE CONFIG")</li>
-                <li>Enable Firestore Database in Firebase Console</li>
-                <li>Set rules to: <code>allow read, write: if true;</code> (for testing)</li>
-            </ol>
-            <p style="margin-top: 12px;"><strong>Note:</strong> Until configured, the app will work offline using localStorage only.</p>
-        </div>
-
         <div class="card">
             <div class="header">
                 <div class="title-group">
@@ -388,11 +424,11 @@
                     </svg>
                     <div>
                         <h1>Employee Turns</h1>
-                        <div class="sync-status" id="syncStatus">
-                            <svg class="sync-icon" id="syncIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="sync-status">
+                            <svg class="sync-icon offline" id="syncIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
                             </svg>
-                            <span id="syncText">Offline mode</span>
+                            <span id="syncText">Offline mode - Configure Firebase</span>
                         </div>
                     </div>
                 </div>
@@ -415,7 +451,7 @@
             <div id="nextBanner"></div>
             
             <div class="edit-mode-banner" id="editModeBanner">
-                <p>📝 Edit Mode</p>
+                <p>📝 Edit Mode Active</p>
                 <div class="add-employee">
                     <input type="text" id="newEmployeeName" placeholder="Enter employee name" onkeypress="if(event.key==='Enter') addEmployee()">
                     <button class="btn-success" onclick="addEmployee()">
@@ -434,6 +470,7 @@
         </div>
     </div>
 
+    <!-- Clear All Modal -->
     <div class="modal" id="clearModal">
         <div class="modal-content">
             <h3>Clear All?</h3>
@@ -451,33 +488,36 @@
 
     <script>
         // ========================================
-        // FIREBASE CONFIG - REPLACE WITH YOUR OWN
+        // CONFIGURATION
         // ========================================
+        
+        // REPLACE WITH YOUR FIREBASE CONFIG
         const firebaseConfig = {
-            // REPLACE WITH YOUR FIREBASE CONFIG
-            // Get this from Firebase Console > Project Settings > Your apps > Firebase SDK snippet
             apiKey: "AIzaSyDDtDd7KrMcvPA-1QluxKQvco0sLa_kWdk",
             authDomain: "nail-salon-d962b.firebaseapp.com",
             projectId: "nail-salon-d962b",
             storageBucket: "nail-salon-d962b.firebasestorage.app",
-            messagingSenderId: "Y1076505113914",
+            messagingSenderId: "1076505113914",
             appId: "1:1076505113914:web:7a0a80d1cd4781357c8c03"
         };
 
-        // Initialize Firebase
+        // ========================================
+        // FIREBASE INITIALIZATION
+        // ========================================
         let db = null;
         let firebaseEnabled = false;
 
         try {
-            if (firebaseConfig.apiKey !== "AIzaSyDDtDd7KrMcvPA-1QluxKQvco0sLa_kWdk") {
+            if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
                 firebase.initializeApp(firebaseConfig);
                 db = firebase.firestore();
                 firebaseEnabled = true;
-                document.getElementById('setupCard').style.display = 'none';
-                console.log('Firebase initialized successfully');
+                console.log('✅ Firebase initialized successfully');
+            } else {
+                console.log('⚠️ Firebase not configured - using offline mode');
             }
         } catch (error) {
-            console.log('Firebase not configured, using localStorage only');
+            console.error('❌ Firebase initialization error:', error);
         }
 
         // ========================================
@@ -509,21 +549,30 @@
         // ========================================
         function init() {
             loadData();
+            
             if (firebaseEnabled) {
-                // Listen for real-time updates
+                updateSyncStatus('saving');
+                // Listen for real-time updates from Firebase
                 db.collection('nailSalon').doc('data').onSnapshot((doc) => {
                     if (doc.exists) {
                         const data = doc.data();
                         employees = data.employees || employees;
-                        history = data.history || [employees];
+                        // Parse history from string
+                        history = data.history ? JSON.parse(data.history) : [employees];
                         historyIndex = data.historyIndex || 0;
                         updateSyncStatus('synced');
                         render();
+                    } else {
+                        // Document doesn't exist yet, create it
+                        console.log('Creating initial Firebase document...');
+                        saveData();
                     }
                 }, (error) => {
                     console.error('Firebase sync error:', error);
                     updateSyncStatus('error');
                 });
+            } else {
+                updateSyncStatus('offline');
             }
         }
 
@@ -544,13 +593,17 @@
         async function saveData() {
             const data = {
                 employees: employees,
-                history: history,
+                history: JSON.stringify(history), // Convert to string for Firebase
                 historyIndex: historyIndex,
                 lastUpdated: new Date().toISOString()
             };
 
-            // Always save to localStorage
-            localStorage.setItem('nailSalonData', JSON.stringify(data));
+            // Save with full history to localStorage (offline backup)
+            localStorage.setItem('nailSalonData', JSON.stringify({
+                employees: employees,
+                history: history,
+                historyIndex: historyIndex
+            }));
 
             // Save to Firebase if enabled
             if (firebaseEnabled) {
@@ -568,19 +621,19 @@
         function updateSyncStatus(status) {
             syncStatus = status;
             const icon = document.getElementById('syncIcon');
-            const text = document.getElementById('syncStatus');
+            const textEl = document.getElementById('syncText');
             
             icon.className = 'sync-icon ' + status;
             
             if (status === 'synced') {
                 lastSync = new Date();
-                document.getElementById('syncText').textContent = 'Synced ' + lastSync.toLocaleTimeString();
+                textEl.textContent = '☁️ Cloud Synced ' + lastSync.toLocaleTimeString();
             } else if (status === 'saving') {
-                document.getElementById('syncText').textContent = 'Saving...';
+                textEl.textContent = '☁️ Syncing to cloud...';
             } else if (status === 'error') {
-                document.getElementById('syncText').textContent = 'Sync error';
-            } else {
-                document.getElementById('syncText').textContent = 'Offline mode';
+                textEl.textContent = '❌ Sync error - Check console for details';
+            } else if (status === 'offline') {
+                textEl.textContent = '💾 Offline mode - localStorage only';
             }
         }
 
@@ -816,8 +869,12 @@
             updateButtons();
         }
 
-        // Start the app
-        init();
+        // ========================================
+        // START THE APP
+        // ========================================
+        window.onload = function() {
+            init();
+        };
     </script>
 </body>
 </html>
