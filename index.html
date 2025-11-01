@@ -6,6 +6,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#3b82f6">
+    <link rel="manifest" href="manifest.json">
     <title>Nail Salon Turn Manager</title>
     <style>
         * {
@@ -429,7 +431,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                     </svg>
                     <div>
-                        <h1>Employee Turns V19</h1>
+                        <h1>Employee Turns V22</h1>
                         <div class="sync-status">
                             <svg class="sync-icon offline" id="syncIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
@@ -457,7 +459,7 @@
             <div id="nextBanner"></div>
             
             <div class="edit-mode-banner" id="editModeBanner">
-                <p>📝 Edit Mode Active</p>
+                <p>📝 Edit Mode</p>
                 <div class="add-employee">
                     <input type="text" id="newEmployeeName" placeholder="Enter employee name" onkeypress="if(event.key==='Enter') addEmployee()">
                     <button class="btn-success" onclick="addEmployee()">
@@ -498,14 +500,14 @@
         // ========================================
         
         // REPLACE WITH YOUR FIREBASE CONFIG
-        const firebaseConfig = {
-            apiKey: "AIzaSyDDtDd7KrMcvPA-1QluxKQvco0sLa_kWdk",
-            authDomain: "nail-salon-d962b.firebaseapp.com",
-            projectId: "nail-salon-d962b",
-            storageBucket: "nail-salon-d962b.firebasestorage.app",
-            messagingSenderId: "1076505113914",
-            appId: "1:1076505113914:web:7a0a80d1cd4781357c8c03"
-        };
+const firebaseConfig = {
+  apiKey: "AIzaSyDDtDd7KrMcvPA-1QluxKQvco0sLa_kWdk",
+  authDomain: "nail-salon-d962b.firebaseapp.com",
+  projectId: "nail-salon-d962b",
+  storageBucket: "nail-salon-d962b.firebasestorage.app",
+  messagingSenderId: "1076505113914",
+  appId: "1:1076505113914:web:7a0a80d1cd4781357c8c03"
+};
 
         // ========================================
         // FIREBASE INITIALIZATION
@@ -550,6 +552,33 @@
         let syncStatus = 'offline';
         let lastSync = null;
         let wakeLock = null;
+
+        // ========================================
+        // SCREEN WAKE LOCK (PREVENT SLEEP)
+        // ========================================
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('✅ Screen wake lock activated - screen will stay on');
+                    
+                    wakeLock.addEventListener('release', () => {
+                        console.log('Wake lock released');
+                    });
+                } else {
+                    console.log('⚠️ Wake Lock API not supported on this device');
+                }
+            } catch (err) {
+                console.error('Wake lock error:', err);
+            }
+        }
+
+        // Re-request wake lock if user comes back to the app
+        document.addEventListener('visibilitychange', async () => {
+            if (document.visibilityState === 'visible' && wakeLock !== null) {
+                await requestWakeLock();
+            }
+        });
 
         // ========================================
         // INITIALIZATION
@@ -881,6 +910,7 @@
         // ========================================
         window.onload = function() {
             init();
+            requestWakeLock(); // Keep screen on
         };
     </script>
 </body>
