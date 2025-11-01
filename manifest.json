@@ -1,8 +1,9 @@
 {
-  "name": "Nail Salon",
+  "name": "Nail Salon Turn Manager",
   "short_name": "Nail Salon",
-  "start_url": "./index.html",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#fce7f3",
-  "theme_color": "#3b82f6"
+  "theme_color": "#3b82f6",
+  "orientation": "any"
 }
