@@ -531,6 +531,10 @@ const firebaseConfig = {
   messagingSenderId: "1076505113914",
   appId: "1:1076505113914:web:7a0a80d1cd4781357c8c03"
 };
+        if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js");
+}
+
 
         // ========================================
         // FIREBASE INITIALIZATION
