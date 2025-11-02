@@ -1,6 +1,6 @@
 {
-  "name": "Nail Salon Turn Manager",
-  "short_name": "Nail Salon",
+  "name": "Employee Turns V5",
+  "short_name": "Employee Turns",
   "description": "Employee turn management for nail salon",
   "start_url": "./index.html",
   "scope": "./",
@@ -19,4 +19,12 @@
       "type": "image/png"
     }
   ]
+}
+{
+  "short_name": "Employee Turns",
+  "name": "Employee Turns V5",
+  "display": "standalone",
+  "theme_color": "#1976d2",
+  "background_color": "#ffffff",
+  ...
 }
