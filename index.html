@@ -531,11 +531,13 @@ const firebaseConfig = {
   messagingSenderId: "1076505113914",
   appId: "1:1076505113914:web:7a0a80d1cd4781357c8c03"
 };
+        
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register("/nail-salon-app/service-worker.js").then(() => {
     console.log('Service Worker registered');
   });
 }
+
 
 
 
