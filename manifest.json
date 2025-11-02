@@ -1,11 +1,22 @@
 {
-  "background_color": "#ffffff",
-  "dir": "ltr",
+  "name": "Nail Salon Turn Manager",
+  "short_name": "Nail Salon",
+  "description": "Employee turn management for nail salon",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
-  "name": "chunglinh1995.github",
-  "orientation": "any",
-  "scope": "/",
-  "short_name": "chunglinh1995.github",
-  "start_url": "/",
-  "theme_color": "#3b82f6"
+  "background_color": "#fce7f3",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
 }
