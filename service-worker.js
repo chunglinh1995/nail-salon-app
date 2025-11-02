@@ -5,7 +5,7 @@ const ASSETS_TO_CACHE = [
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
-  // add more assets/files as needed (CSS, JS, etc)
+  // Add your main JS and CSS files here...
 ];
 
 self.addEventListener('install', event => {
@@ -15,20 +15,17 @@ self.addEventListener('install', event => {
   );
   self.skipWaiting();
 });
-
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(key => key !== CACHE_NAME)
-        .map(key => caches.delete(key)))
+      Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key)))
     )
   );
   self.clients.claim();
 });
-
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request)
-      .then(cached => cached || fetch(event.request))
+      .then(response => response || fetch(event.request))
   );
 });
