@@ -20,11 +20,3 @@
     }
   ]
 }
-{
-  "short_name": "Employee Turns",
-  "name": "Employee Turns V5",
-  "display": "standalone",
-  "theme_color": "#1976d2",
-  "background_color": "#ffffff",
-  ...
-}
