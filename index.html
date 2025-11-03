@@ -319,6 +319,20 @@
             font-weight: bold;
             color: #3b82f6;
         }
+        .update-banner {
+            background: #10b981;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-top: 16px;
+            text-align: center;
+            font-weight: 600;
+        }
+        .update-banner a {
+            color: white;
+            text-decoration: underline;
+            font-weight: bold;
+        }
         .modal {
             display: none;
             position: fixed;
@@ -453,7 +467,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                     </svg>
                     <div>
-                        <h1>Employee Turns V5</h1>
+                        <h1>Employee Turns V6</h1>
                         <div class="sync-status">
                             <svg class="sync-icon offline" id="syncIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
@@ -499,6 +513,10 @@
             <h2 style="font-size: 20px; color: #1f2937; margin-bottom: 16px;">Working Today</h2>
             <div class="summary-list" id="summaryList"></div>
         </div>
+
+        <div class="update-banner">
+            📱 <a href="https://chungling1995.github.io/nail-salon-app/" target="_blank">Download Latest Version</a>
+        </div>
     </div>
 
     <!-- Clear All Modal -->
@@ -516,27 +534,21 @@
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function() {
-    navigator.serviceWorker.register('/service-worker.js');
-  });
-}
-</script>
+
     <script>
         // ========================================
         // CONFIGURATION
         // ========================================
         
         // REPLACE WITH YOUR FIREBASE CONFIG
-const firebaseConfig = {
-  apiKey: "AIzaSyDDtDd7KrMcvPA-1QluxKQvco0sLa_kWdk",
-  authDomain: "nail-salon-d962b.firebaseapp.com",
-  projectId: "nail-salon-d962b",
-  storageBucket: "nail-salon-d962b.firebasestorage.app",
-  messagingSenderId: "1076505113914",
-  appId: "1:1076505113914:web:7a0a80d1cd4781357c8c03"
-};
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
 
         // ========================================
         // FIREBASE INITIALIZATION
@@ -932,7 +944,17 @@ const firebaseConfig = {
 
         function render() {
             // In edit mode, show employees in their actual order (not sorted)
-            const displayList = editMode ? employees : getSortedEmployees();
+            // BUT still sort by: numbers first, then working, then no numbers
+            let displayList;
+            if (editMode) {
+                const withNumbers = employees.filter(e => e.turn !== null && e.status === 'waiting').sort((a, b) => a.turn - b.turn);
+                const working = employees.filter(e => e.status === 'working');
+                const withoutNumbers = employees.filter(e => e.turn === null && e.status === 'waiting');
+                displayList = [...withNumbers, ...working, ...withoutNumbers];
+            } else {
+                displayList = getSortedEmployees();
+            }
+            
             const waitingWithNumbers = employees.filter(e => e.turn !== null && e.status === 'waiting').sort((a, b) => a.turn - b.turn);
             const working = employees.filter(e => e.status === 'working');
             const nextEmployee = waitingWithNumbers.length > 0 ? waitingWithNumbers[0] : null;
