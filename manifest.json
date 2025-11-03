@@ -1,6 +1,6 @@
 {
   "name": "Employee Turns V5",
-  "short_name": "Employee Turns",
+  "short_name": "TurnManager",
   "description": "Employee turn management for nail salon",
   "start_url": "./index.html",
   "scope": "./",
