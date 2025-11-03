@@ -4,7 +4,7 @@
   "description": "Employee turn management for nail salon",
   "start_url": "./index.html",
   "scope": "./",
-  "display": "standalone",
+  "display": "fullscreen",
   "background_color": "#fce7f3",
   "theme_color": "#3b82f6",
   "icons": [
