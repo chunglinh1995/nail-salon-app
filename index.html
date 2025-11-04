@@ -13,7 +13,7 @@
 
 </head>
 <body>
-    <div class="container">
+    <div class="container page active" id="mainPage">
         <div class="card">
             <div class="header">
                 <div class="title-group">
@@ -21,7 +21,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                     </svg>
                     <div>
-                        <h1>Employee Turns V8</h1>
+                        <h1>Employee Turns V14</h1>
                         <div class="sync-status">
                             <svg class="sync-icon offline" id="syncIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
@@ -33,6 +33,13 @@
                 <div class="button-group">
                     <button class="btn-edit" onclick="toggleEditMode()" id="editModeBtn">Edit</button>
                     <button class="btn-danger" onclick="cancelEdit()" id="cancelBtn" style="display:none;">Cancel</button>
+                    <div class="dropdown">
+                        <button class="btn-primary" onclick="toggleDropdown()">☰ Menu</button>
+                        <div class="dropdown-content" id="dropdownMenu">
+                            <button onclick="showEmployeeList()">👥 Employee List</button>
+                            <button onclick="showAddEmployeeModal()">➕ Add New Employee</button>
+                        </div>
+                    </div>
                     <button class="icon-btn btn-primary" onclick="undo()" id="undoBtn" disabled>
                         <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
@@ -49,16 +56,6 @@
 
             <div id="nextBanner"></div>
             
-            <div class="edit-mode-banner" id="editModeBanner">
-                <p>📝 Edit Mode</p>
-                <div class="add-employee">
-                    <input type="text" id="newEmployeeName" placeholder="Enter employee name" onkeypress="if(event.key==='Enter') addEmployee()">
-                    <button class="btn-success" onclick="addEmployee()">
-                        + Add
-                    </button>
-                </div>
-            </div>
-
             <p class="working-count" id="workingCount"></p>
             <div class="employee-list" id="employeeList"></div>
         </div>
@@ -69,7 +66,43 @@
         </div>
 
         <div class="update-banner">
-            📱 <a href="https://github.com/chunglinh1995/nail-salon-app/releases/download/NEW/TurnManager.apk" target="_blank">Download Latest Version</a>
+            📱 <a href="https://chungling1995.github.io/nail-salon-app/" target="_blank">Download Latest Version</a>
+        </div>
+    </div>
+
+    <!-- Employee List Page -->
+    <div class="container page" id="employeeListPage">
+        <div class="card">
+            <div class="header">
+                <div class="title-group">
+                    <button class="btn-secondary" onclick="showMainPage()">← Back</button>
+                    <h1>Employee List</h1>
+                </div>
+                <button class="btn-success" onclick="showAddEmployeeModal()">➕ Add New</button>
+            </div>
+            <div id="employeeInfoList"></div>
+        </div>
+    </div>
+
+    <!-- Add Employee Modal -->
+    <div class="modal" id="addEmployeeModal">
+        <div class="modal-content">
+            <h3 id="addModalTitle">➕ Add New Employee</h3>
+            <div class="form-group">
+                <label>Name:</label>
+                <input type="text" id="newEmpName" placeholder="Enter employee name">
+            </div>
+            <div class="form-group">
+                <label>Birthday:</label>
+                <div class="date-inputs">
+                    <input type="number" id="newEmpMonth" placeholder="Month (1-12)" min="1" max="12">
+                    <input type="number" id="newEmpDay" placeholder="Day (1-31)" min="1" max="31">
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-secondary" onclick="hideAddEmployeeModal()">Cancel</button>
+                <button class="btn-success" id="addModalBtn" onclick="confirmAddEmployee()">Add Employee</button>
+            </div>
         </div>
     </div>
 
@@ -127,18 +160,18 @@ const firebaseConfig = {
         // APP STATE
         // ========================================
         let employees = [
-            { name: 'Hai', turn: null, status: 'waiting' },
-            { name: 'Jessica', turn: null, status: 'waiting' },
-            { name: 'Tuấn', turn: null, status: 'waiting' },
-            { name: 'Chien', turn: null, status: 'waiting' },
-            { name: 'Queenie', turn: null, status: 'waiting' },
-            { name: 'Ling', turn: null, status: 'waiting' },
-            { name: 'Huyền', turn: null, status: 'waiting' },
-            { name: 'Katey', turn: null, status: 'waiting' },
-            { name: 'Liễu', turn: null, status: 'waiting' },
-            { name: 'Duyên', turn: null, status: 'waiting' },
-            { name: 'Cường', turn: null, status: 'waiting' },
-            { name: 'Chung', turn: null, status: 'waiting' }
+            { name: 'Hai', turn: null, status: 'waiting', birthMonth: null, birthDay: null },
+            { name: 'Jessica', turn: null, status: 'waiting', birthMonth: null, birthDay: null },
+            { name: 'Tuấn', turn: null, status: 'waiting', birthMonth: null, birthDay: null },
+            { name: 'Chien', turn: null, status: 'waiting', birthMonth: null, birthDay: null },
+            { name: 'Queenie', turn: null, status: 'waiting', birthMonth: null, birthDay: null },
+            { name: 'Ling', turn: null, status: 'waiting', birthMonth: null, birthDay: null },
+            { name: 'Huyền', turn: null, status: 'waiting', birthMonth: null, birthDay: null },
+            { name: 'Katey', turn: null, status: 'waiting', birthMonth: null, birthDay: null },
+            { name: 'Liễu', turn: null, status: 'waiting', birthMonth: null, birthDay: null },
+            { name: 'Duyên', turn: null, status: 'waiting', birthMonth: null, birthDay: null },
+            { name: 'Cường', turn: null, status: 'waiting', birthMonth: null, birthDay: null },
+            { name: 'Chung', turn: null, status: 'waiting', birthMonth: null, birthDay: null }
         ];
         let history = [];
         let historyIndex = -1;
@@ -149,6 +182,7 @@ const firebaseConfig = {
         let wakeLock = null;
         let employeesBackup = null;
         let draggedIndex = null;
+        let editingEmployeeIndex = null;
 
         // ========================================
         // SCREEN WAKE LOCK (PREVENT SLEEP)
@@ -334,17 +368,190 @@ const firebaseConfig = {
             const input = document.getElementById('newEmployeeName');
             const name = input.value.trim();
             if (name) {
-                employees.push({ name: name, turn: null, status: 'waiting' });
+                employees.push({ name: name, turn: null, status: 'waiting', birthMonth: null, birthDay: null });
                 render();
                 input.value = '';
                 input.focus();
             }
         }
 
-        function removeEmployee(index) {
-            if (confirm(`Remove ${employees[index].name} from the list?`)) {
+        function showAddEmployeeModal() {
+            editingEmployeeIndex = null;
+            document.getElementById('addModalTitle').textContent = '➕ Add New Employee';
+            document.getElementById('addModalBtn').textContent = 'Add Employee';
+            document.getElementById('addEmployeeModal').classList.add('show');
+            document.getElementById('newEmpName').focus();
+        }
+
+        function hideAddEmployeeModal() {
+            editingEmployeeIndex = null;
+            document.getElementById('addEmployeeModal').classList.remove('show');
+            document.getElementById('newEmpName').value = '';
+            document.getElementById('newEmpMonth').value = '';
+            document.getElementById('newEmpDay').value = '';
+        }
+
+        function confirmAddEmployee() {
+            const name = document.getElementById('newEmpName').value.trim();
+            const month = parseInt(document.getElementById('newEmpMonth').value);
+            const day = parseInt(document.getElementById('newEmpDay').value);
+            
+            if (!name) {
+                alert('Please enter employee name');
+                return;
+            }
+            
+            if (month && (month < 1 || month > 12)) {
+                alert('Month must be between 1 and 12');
+                return;
+            }
+            
+            if (day && (day < 1 || day > 31)) {
+                alert('Day must be between 1 and 31');
+                return;
+            }
+            
+            if (editingEmployeeIndex !== null) {
+                // Editing existing employee
+                employees[editingEmployeeIndex].name = name;
+                employees[editingEmployeeIndex].birthMonth = month || null;
+                employees[editingEmployeeIndex].birthDay = day || null;
+            } else {
+                // Adding new employee
+                employees.push({ 
+                    name: name, 
+                    turn: null, 
+                    status: 'waiting',
+                    birthMonth: month || null,
+                    birthDay: day || null
+                });
+            }
+            
+            saveToHistory();
+            render();
+            renderEmployeeList();
+            hideAddEmployeeModal();
+        }
+
+        function editEmployee(index) {
+            editingEmployeeIndex = index;
+            const emp = employees[index];
+            
+            document.getElementById('addModalTitle').textContent = '✏️ Edit Employee';
+            document.getElementById('addModalBtn').textContent = 'Save Changes';
+            document.getElementById('newEmpName').value = emp.name;
+            document.getElementById('newEmpMonth').value = emp.birthMonth || '';
+            document.getElementById('newEmpDay').value = emp.birthDay || '';
+            document.getElementById('addEmployeeModal').classList.add('show');
+            document.getElementById('newEmpName').focus();
+        }
+
+        function deleteEmployee(index) {
+            console.log('=== DELETE EMPLOYEE DEBUG ===');
+            console.log('Total employees:', employees.length);
+            console.log('Index to delete:', index);
+            console.log('Employee at index:', employees[index]);
+            
+            if (!employees[index]) {
+                alert('Error: Employee not found at index ' + index);
+                console.log('ERROR: Employee not found!');
+                return;
+            }
+            
+            const empName = employees[index].name;
+            console.log('About to show confirm dialog for:', empName);
+            
+            const confirmed = confirm(`⚠️ PERMANENT DELETE\n\nAre you sure you want to permanently delete ${empName}?\n\nThis action CANNOT be undone!`);
+            console.log('User confirmed?', confirmed);
+            
+            if (confirmed) {
+                console.log('Deleting employee:', empName);
                 employees.splice(index, 1);
+                console.log('✅ Employee deleted. Remaining:', employees.length);
+                saveToHistory();
                 render();
+                renderEmployeeList();
+            } else {
+                console.log('❌ User cancelled delete operation');
+            }
+        }
+
+        function toggleDropdown() {
+            document.getElementById('dropdownMenu').classList.toggle('show');
+        }
+
+        function showMainPage() {
+            document.getElementById('mainPage').classList.add('active');
+            document.getElementById('employeeListPage').classList.remove('active');
+            document.getElementById('dropdownMenu').classList.remove('show');
+        }
+
+        function showEmployeeList() {
+            document.getElementById('mainPage').classList.remove('active');
+            document.getElementById('employeeListPage').classList.add('active');
+            document.getElementById('dropdownMenu').classList.remove('show');
+            renderEmployeeList();
+        }
+
+        function renderEmployeeList() {
+            const list = document.getElementById('employeeInfoList');
+            const sortedEmps = [...employees].sort((a, b) => a.name.localeCompare(b.name));
+            
+            list.innerHTML = sortedEmps.map((emp) => {
+                // Find actual index in original employees array
+                const actualIndex = employees.indexOf(emp);
+                const birthday = emp.birthMonth && emp.birthDay 
+                    ? `${emp.birthMonth}/${emp.birthDay}` 
+                    : 'Not set';
+                    
+                return `
+                    <div class="employee-info-card">
+                        <div class="info">
+                            <h3>${emp.name}</h3>
+                            <p>🎂 Birthday: ${birthday}</p>
+                        </div>
+                        <div class="actions">
+                            <button class="btn-primary btn-small" onclick="editEmployee(${actualIndex})">✏️ Edit</button>
+                            <button class="btn-danger btn-small" onclick="deleteEmployee(${actualIndex})">🗑️ Delete</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Close dropdown when clicking outside
+        window.onclick = function(event) {
+            if (!event.target.matches('.btn-primary') && !event.target.closest('.dropdown')) {
+                document.getElementById('dropdownMenu').classList.remove('show');
+            }
+        }
+
+        function removeEmployee(index) {
+            console.log('=== REMOVE EMPLOYEE DEBUG ===');
+            console.log('Total employees:', employees.length);
+            console.log('Index to remove:', index);
+            console.log('Employee at index:', employees[index]);
+            
+            if (!employees[index]) {
+                alert('Error: Employee not found at index ' + index);
+                console.log('ERROR: Employee not found!');
+                return;
+            }
+            
+            const empName = employees[index].name;
+            console.log('About to show confirm dialog for:', empName);
+            
+            const confirmed = confirm(`Hide ${empName} from the queue?\n\n(They will return when you click "Clear All")`);
+            console.log('User confirmed?', confirmed);
+            
+            if (confirmed) {
+                employees[index].turn = null;
+                employees[index].status = 'hidden';
+                console.log('✅ Employee hidden successfully:', employees[index]);
+                saveToHistory();
+                render();
+            } else {
+                console.log('❌ User cancelled hide operation');
             }
         }
 
@@ -352,8 +559,12 @@ const firebaseConfig = {
         function handleDragStart(e, index) {
             draggedIndex = index;
             e.currentTarget.classList.add('dragging');
+            e.currentTarget.setAttribute('data-index', index);
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', index);
+            // Prevent text selection popup on mobile
+            e.currentTarget.style.webkitUserSelect = 'none';
+            e.currentTarget.style.userSelect = 'none';
         }
 
         function handleDragOver(e) {
@@ -381,6 +592,8 @@ const firebaseConfig = {
             // Remove drag over styling
             document.querySelectorAll('.employee-row').forEach(row => {
                 row.classList.remove('drag-over');
+                row.style.webkitUserSelect = '';
+                row.style.userSelect = '';
             });
             
             if (draggedIndex !== null && draggedIndex !== dropIndex) {
@@ -411,28 +624,13 @@ const firebaseConfig = {
 
         function handleDragEnd(e) {
             e.currentTarget.classList.remove('dragging');
+            e.currentTarget.removeAttribute('data-index');
             document.querySelectorAll('.employee-row').forEach(row => {
                 row.classList.remove('drag-over');
+                row.style.webkitUserSelect = '';
+                row.style.userSelect = '';
             });
             draggedIndex = null;
-        }
-
-        function startEdit(index) {
-            editingIndex = index;
-            render();
-            setTimeout(() => {
-                const input = document.getElementById('edit-' + index);
-                if (input) input.focus();
-            }, 0);
-        }
-
-        function saveEdit(index, value) {
-            if (value.trim()) {
-                employees[index].name = value.trim();
-                saveToHistory();
-            }
-            editingIndex = null;
-            render();
         }
 
         function toggleEditMode() {
@@ -445,13 +643,11 @@ const firebaseConfig = {
                 employeesBackup = JSON.parse(JSON.stringify(employees));
                 btn.textContent = 'Save';
                 btn.classList.add('active');
-                banner.classList.add('active');
             } else {
                 // Exiting edit mode with save
                 employeesBackup = null;
                 btn.textContent = 'Edit';
                 btn.classList.remove('active');
-                banner.classList.remove('active');
                 saveToHistory();
             }
             render();
@@ -464,10 +660,8 @@ const firebaseConfig = {
             }
             editMode = false;
             const btn = document.getElementById('editModeBtn');
-            const banner = document.getElementById('editModeBanner');
             btn.textContent = 'Edit';
             btn.classList.remove('active');
-            banner.classList.remove('active');
             render();
         }
 
@@ -480,7 +674,11 @@ const firebaseConfig = {
         }
 
         function confirmClearAll() {
-            employees = employees.map(emp => ({ ...emp, turn: null, status: 'waiting' }));
+            employees = employees.map(emp => ({ 
+                ...emp, 
+                turn: null, 
+                status: emp.status === 'hidden' ? 'waiting' : emp.status // Unhide hidden employees
+            }));
             saveToHistory();
             render();
             hideClearModal();
@@ -493,6 +691,7 @@ const firebaseConfig = {
             const waitingWithNumbers = employees.filter(e => e.turn !== null && e.status === 'waiting').sort((a, b) => a.turn - b.turn);
             const working = employees.filter(e => e.status === 'working');
             const waitingWithoutNumbers = employees.filter(e => e.turn === null && e.status === 'waiting');
+            // Don't show hidden employees
             return [...waitingWithNumbers, ...working, ...waitingWithoutNumbers];
         }
 
@@ -533,20 +732,23 @@ const firebaseConfig = {
 
             // Employee list
             const list = document.getElementById('employeeList');
-            list.innerHTML = displayList.map((emp, index) => {
-                const actualIndex = employees.findIndex(e => e.name === emp.name && e.turn === emp.turn && e.status === emp.status);
-                const isEditing = editingIndex === actualIndex;
+            list.innerHTML = displayList.map((emp, displayIdx) => {
+                // Find the actual index in the employees array
+                const actualIndex = employees.indexOf(emp);
+                
+                console.log(`Employee ${emp.name}: displayIdx=${displayIdx}, actualIndex=${actualIndex}`);
                 
                 return `
                     <div class="employee-row ${emp.status === 'working' ? 'working' : ''}" 
-                        draggable="${editMode && !isEditing}" 
+                        data-actual-index="${actualIndex}"
+                        draggable="${editMode}" 
                         ondragstart="handleDragStart(event, ${actualIndex})"
                         ondragover="handleDragOver(event)"
                         ondragenter="handleDragEnter(event, ${actualIndex})"
                         ondragleave="handleDragLeave(event)"
                         ondrop="handleDrop(event, ${actualIndex})"
                         ondragend="handleDragEnd(event)">
-                        ${editMode && !isEditing ? `
+                        ${editMode ? `
                             <div class="drag-handle">
                                 <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M9 3h2v2H9V3zm0 4h2v2H9V7zm0 4h2v2H9v-2zm0 4h2v2H9v-2zm0 4h2v2H9v-2zm4-16h2v2h-2V3zm0 4h2v2h-2V7zm0 4h2v2h-2v-2zm0 4h2v2h-2v-2zm0 4h2v2h-2v-2z"/>
@@ -554,30 +756,14 @@ const firebaseConfig = {
                             </div>
                         ` : ''}
                         <div class="employee-name">
-                            ${isEditing ? `
-                                <input type="text" id="edit-${actualIndex}" value="${emp.name}" 
-                                    onkeypress="if(event.key==='Enter') saveEdit(${actualIndex}, this.value)"
-                                    onblur="saveEdit(${actualIndex}, this.value)">
-                                <button class="icon-btn btn-success" onclick="saveEdit(${actualIndex}, document.getElementById('edit-${actualIndex}').value)">
-                                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            <span>${emp.name}</span>
+                            ${editMode ? `
+                                <button class="remove-btn" onclick="event.stopPropagation(); console.log('X clicked for index: ${actualIndex}'); removeEmployee(${actualIndex}); return false;">
+                                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                                     </svg>
                                 </button>
-                            ` : `
-                                <span>${emp.name}</span>
-                                ${editMode ? `
-                                    <button class="edit-btn" onclick="startEdit(${actualIndex})">
-                                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-                                        </svg>
-                                    </button>
-                                    <button class="remove-btn" onclick="removeEmployee(${actualIndex})">
-                                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                        </svg>
-                                    </button>
-                                ` : ''}
-                            `}
+                            ` : ''}
                         </div>
                         ${emp.status === 'working' ? `
                             <span class="working-label">WORKING</span>
