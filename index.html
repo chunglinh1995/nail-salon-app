@@ -8,9 +8,657 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#3b82f6">
     <link rel="manifest" href="/nail-salon-app/manifest.json">
-    <link rel="stylesheet" href="/nail-salon-app/style.css">
     <title>Nail Salon Turn Manager</title>
-
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #fce7f3 0%, #f3e8ff 100%);
+            min-height: 100vh;
+            padding: 16px;
+            margin: 0;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .title-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .icon {
+            width: 32px;
+            height: 32px;
+            color: #3b82f6;
+        }
+        h1 {
+            font-size: 24px;
+            color: #1f2937;
+        }
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        .sync-icon {
+            width: 16px;
+            height: 16px;
+        }
+        .sync-icon.synced { color: #10b981; }
+        .sync-icon.saving { color: #3b82f6; animation: pulse 1.5s infinite; }
+        .sync-icon.error { color: #ef4444; }
+        .sync-icon.offline { color: #9ca3af; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .button-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        button:active {
+            transform: scale(0.95);
+        }
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) {
+            background: #2563eb;
+        }
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #059669;
+        }
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+        .btn-warning:hover {
+            background: #d97706;
+        }
+        .btn-edit {
+            background: #f59e0b;
+            color: white;
+        }
+        .btn-edit:hover {
+            background: #d97706;
+        }
+        .btn-edit.active {
+            background: #10b981;
+        }
+        .btn-edit.active:hover {
+            background: #059669;
+        }
+        .drag-handle {
+            cursor: move;
+            padding: 8px;
+            color: #3b82f6;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            font-weight: bold;
+        }
+        .drag-handle:active {
+            cursor: grabbing;
+            color: #1d4ed8;
+            transform: scale(1.2);
+        }
+        .employee-row.dragging {
+            opacity: 0.3;
+            background: #dbeafe;
+            border: 3px dashed #3b82f6;
+        }
+        .employee-row.drag-over {
+            background: #fbbf24;
+            border: 4px solid #f59e0b;
+            transform: scale(1.05);
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.5);
+        }
+        .employee-row.drag-over::before {
+            content: '⬇️ DROP HERE';
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #f59e0b;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 14px;
+            z-index: 1000;
+            white-space: nowrap;
+        }
+        .employee-row {
+            position: relative;
+        }
+        button:disabled {
+            background: #e5e7eb;
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+        .icon-btn {
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .next-banner {
+            background: #3b82f6;
+            color: white;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .next-banner p:first-child {
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        .next-banner .name {
+            font-size: 28px;
+            font-weight: bold;
+            margin: 4px 0;
+        }
+        .next-banner .turn {
+            font-size: 20px;
+        }
+        .edit-mode-banner {
+            display: none;
+            margin-bottom: 16px;
+            padding: 16px;
+            background: #fef3c7;
+            border-radius: 8px;
+            border: 2px solid #f59e0b;
+        }
+        .edit-mode-banner.active {
+            display: block;
+        }
+        .edit-mode-banner p {
+            color: #92400e;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .add-employee {
+            display: flex;
+            gap: 8px;
+        }
+        .add-employee input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #f59e0b;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        .add-employee input:focus {
+            outline: none;
+            border-color: #d97706;
+        }
+        .working-count {
+            color: #6b7280;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .employee-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .employee-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px;
+            border-radius: 8px;
+            border: 2px solid #e5e7eb;
+            background: #f9fafb;
+            position: relative;
+            min-height: 70px;
+        }
+        .employee-row::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 0;
+            right: 0;
+            bottom: -10px;
+            pointer-events: none;
+        }
+        .employee-row.working {
+            background: #fef3c7;
+            border-color: #fbbf24;
+        }
+        .employee-name {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .employee-name span {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .employee-name input {
+            flex: 1;
+            font-size: 18px;
+            font-weight: 600;
+            border: 2px solid #3b82f6;
+            border-radius: 6px;
+            padding: 4px 8px;
+        }
+        .edit-btn, .remove-btn {
+            padding: 4px;
+            background: transparent;
+            color: #9ca3af;
+            border: none;
+            cursor: pointer;
+        }
+        .edit-btn:hover {
+            color: #3b82f6;
+        }
+        .remove-btn:hover {
+            color: #ef4444;
+        }
+        .turn-input {
+            width: 80px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #3b82f6;
+            border: 2px solid #93c5fd;
+            border-radius: 8px;
+            padding: 8px;
+        }
+        .turn-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        .working-label {
+            font-size: 16px;
+            font-weight: bold;
+            color: #d97706;
+            padding: 0 12px;
+        }
+        .summary-card {
+            margin-top: 16px;
+        }
+        .summary-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #eff6ff;
+            border-radius: 8px;
+        }
+        .summary-item span:first-child {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .summary-item span:last-child {
+            font-size: 20px;
+            font-weight: bold;
+            color: #3b82f6;
+        }
+        .update-banner {
+            background: #10b981;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-top: 16px;
+            text-align: center;
+            font-weight: 600;
+        }
+        .update-banner a {
+            color: white;
+            text-decoration: underline;
+            font-weight: bold;
+        }
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 200px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            border-radius: 8px;
+            z-index: 1000;
+            right: 0;
+            top: 100%;
+            margin-top: 8px;
+        }
+        .dropdown-content.show {
+            display: block;
+        }
+        .dropdown-content button {
+            width: 100%;
+            padding: 12px 16px;
+            text-align: left;
+            border: none;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            color: #1f2937;
+        }
+        .dropdown-content button:hover {
+            background: #f3f4f6;
+        }
+        .dropdown-content button:first-child {
+            border-radius: 8px 8px 0 0;
+        }
+        .dropdown-content button:last-child {
+            border-radius: 0 0 8px 8px;
+        }
+        .page {
+            display: none;
+        }
+        .page.active {
+            display: block;
+        }
+        .employee-info-card {
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .employee-info-card .info {
+            flex: 1;
+        }
+        .employee-info-card h3 {
+            color: #1f2937;
+            margin-bottom: 8px;
+            font-size: 18px;
+        }
+        .employee-info-card p {
+            color: #6b7280;
+            margin: 4px 0;
+        }
+        .employee-info-card .actions {
+            display: flex;
+            gap: 8px;
+        }
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #374151;
+            font-weight: 600;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        .date-inputs {
+            display: flex;
+            gap: 12px;
+        }
+        .date-inputs input {
+            flex: 1;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal.show {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            max-width: 400px;
+            width: 90%;
+        }
+        .modal-content h3 {
+            margin-bottom: 16px;
+            font-size: 20px;
+            color: #1f2937;
+        }
+        .modal-content p {
+            margin-bottom: 12px;
+            color: #6b7280;
+            line-height: 1.5;
+        }
+        .modal-content input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 16px;
+        }
+        .modal-content input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #1f2937;
+        }
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+        .setup-card {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+        .setup-card h2 {
+            color: #92400e;
+            margin-bottom: 16px;
+            font-size: 22px;
+        }
+        .setup-card h3 {
+            color: #78350f;
+            margin-top: 16px;
+            margin-bottom: 8px;
+            font-size: 18px;
+        }
+        .setup-card p, .setup-card li {
+            color: #78350f;
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+        .setup-card code {
+            background: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #dc2626;
+        }
+        .setup-card ol {
+            margin-left: 24px;
+            margin-top: 12px;
+        }
+        .setup-card li {
+            margin-bottom: 12px;
+        }
+        .setup-card strong {
+            color: #92400e;
+        }
+        .setup-card a {
+            color: #2563eb;
+            text-decoration: underline;
+        }
+        .code-block {
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 12px 0;
+            line-height: 1.5;
+        }
+        .warning-box {
+            background: #fef2f2;
+            border: 2px solid #fca5a5;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 12px 0;
+        }
+        .warning-box p {
+            color: #991b1b;
+            margin: 0;
+        }
+        
+        /* Audit Log Styles */
+        .audit-log-item {
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        .audit-log-item.add { border-left: 4px solid #10b981; }
+        .audit-log-item.edit { border-left: 4px solid #3b82f6; }
+        .audit-log-item.delete { border-left: 4px solid #ef4444; }
+        .audit-log-item.hide { border-left: 4px solid #f59e0b; }
+        .audit-log-item.turn { border-left: 4px solid #8b5cf6; }
+        .audit-log-item.working { border-left: 4px solid #f59e0b; }
+        .audit-log-item.done { border-left: 4px solid #10b981; }
+        .audit-log-item.clear { border-left: 4px solid #6b7280; }
+        .audit-log-item.reorder { border-left: 4px solid #06b6d4; }
+        
+        .audit-log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .audit-log-action {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 16px;
+        }
+        .audit-log-time {
+            color: #6b7280;
+            font-size: 13px;
+        }
+        .audit-log-details {
+            color: #4b5563;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .filter-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .filter-btn {
+            padding: 6px 12px;
+            font-size: 13px;
+            background: #e5e7eb;
+            color: #1f2937;
+        }
+        .filter-btn.active {
+            background: #3b82f6;
+            color: white;
+        }
+        .passcode-input {
+            text-align: center;
+            font-size: 24px;
+            letter-spacing: 8px;
+            font-weight: bold;
+        }
+        .error-message {
+            color: #ef4444;
+            font-size: 14px;
+            margin-top: 8px;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
     <div class="container page active" id="mainPage">
@@ -21,7 +669,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                     </svg>
                     <div>
-                        <h1>Employee Turns V14</h1>
+                        <h1>Employee Turns V19</h1>
                         <div class="sync-status">
                             <svg class="sync-icon offline" id="syncIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
@@ -31,13 +679,14 @@
                     </div>
                 </div>
                 <div class="button-group">
-                    <button class="btn-edit" onclick="toggleEditMode()" id="editModeBtn">Edit</button>
+                    <button class="btn-edit" onclick="showPasscodeModal()" id="editModeBtn">Edit</button>
                     <button class="btn-danger" onclick="cancelEdit()" id="cancelBtn" style="display:none;">Cancel</button>
                     <div class="dropdown">
                         <button class="btn-primary" onclick="toggleDropdown()">☰ Menu</button>
                         <div class="dropdown-content" id="dropdownMenu">
                             <button onclick="showEmployeeList()">👥 Employee List</button>
                             <button onclick="showAddEmployeeModal()">➕ Add New Employee</button>
+                            <button onclick="showAuditLog()">📋 Audit Log</button>
                         </div>
                     </div>
                     <button class="icon-btn btn-primary" onclick="undo()" id="undoBtn" disabled>
@@ -84,6 +733,50 @@
         </div>
     </div>
 
+    <!-- Audit Log Page -->
+    <div class="container page" id="auditLogPage">
+        <div class="card">
+            <div class="header">
+                <div class="title-group">
+                    <button class="btn-secondary" onclick="showMainPage()">← Back</button>
+                    <h1>📋 Audit Log</h1>
+                </div>
+                <button class="btn-danger btn-small" onclick="clearAuditLog()">Clear Log</button>
+            </div>
+            
+            <div class="filter-buttons">
+                <button class="filter-btn active" onclick="filterAuditLog('all')">All</button>
+                <button class="filter-btn" onclick="filterAuditLog('add')">Added</button>
+                <button class="filter-btn" onclick="filterAuditLog('edit')">Edited</button>
+                <button class="filter-btn" onclick="filterAuditLog('delete')">Deleted</button>
+                <button class="filter-btn" onclick="filterAuditLog('turn')">Turn Changes</button>
+                <button class="filter-btn" onclick="filterAuditLog('working')">Status Changes</button>
+            </div>
+            
+            <div id="auditLogList"></div>
+        </div>
+    </div>
+
+    <!-- Passcode Modal -->
+    <div class="modal" id="passcodeModal">
+        <div class="modal-content">
+            <h3>🔒 Enter Passcode</h3>
+            <p>Enter passcode to access Edit Mode</p>
+            <input type="password" 
+                   id="passcodeInput" 
+                   class="passcode-input"
+                   placeholder="****"
+                   maxlength="4"
+                   inputmode="numeric"
+                   pattern="[0-9]*">
+            <div id="passcodeError" class="error-message" style="display:none;">Incorrect passcode. Please try again.</div>
+            <div class="modal-buttons">
+                <button class="btn-secondary" onclick="hidePasscodeModal()">Cancel</button>
+                <button class="btn-success" onclick="checkPasscode()">Unlock</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Add Employee Modal -->
     <div class="modal" id="addEmployeeModal">
         <div class="modal-content">
@@ -102,6 +795,32 @@
             <div class="modal-buttons">
                 <button class="btn-secondary" onclick="hideAddEmployeeModal()">Cancel</button>
                 <button class="btn-success" id="addModalBtn" onclick="confirmAddEmployee()">Add Employee</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hide Employee Confirmation Modal -->
+    <div class="modal" id="hideEmployeeModal">
+        <div class="modal-content">
+            <h3>Hide Employee?</h3>
+            <p id="hideEmployeeText"></p>
+            <p style="color: #6b7280; font-size: 14px;">(They will return when you click "Clear All")</p>
+            <div class="modal-buttons">
+                <button class="btn-secondary" onclick="cancelHideEmployee()">Cancel</button>
+                <button class="btn-warning" onclick="confirmHideEmployee()">Yes, Hide</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Employee Confirmation Modal -->
+    <div class="modal" id="deleteEmployeeModal">
+        <div class="modal-content">
+            <h3 style="color: #dc2626;">⚠️ PERMANENT DELETE</h3>
+            <p id="deleteEmployeeText"></p>
+            <p style="color: #991b1b; font-weight: 600;">This action CANNOT be undone!</p>
+            <div class="modal-buttons">
+                <button class="btn-secondary" onclick="cancelDeleteEmployee()">Cancel</button>
+                <button class="btn-danger" onclick="confirmDeleteEmployee()">Delete Permanently</button>
             </div>
         </div>
     </div>
@@ -126,6 +845,8 @@
         // ========================================
         // CONFIGURATION
         // ========================================
+        
+        const EDIT_PASSCODE = "1314";
         
         // REPLACE WITH YOUR FIREBASE CONFIG
 const firebaseConfig = {
@@ -183,6 +904,196 @@ const firebaseConfig = {
         let employeesBackup = null;
         let draggedIndex = null;
         let editingEmployeeIndex = null;
+        let pendingHideIndex = null;
+        let pendingDeleteIndex = null;
+        let auditLog = [];
+        let currentAuditFilter = 'all';
+
+        // ========================================
+        // AUDIT LOG FUNCTIONS
+        // ========================================
+        function addAuditLog(action, details) {
+            const logEntry = {
+                timestamp: new Date().toISOString(),
+                action: action,
+                details: details
+            };
+            auditLog.unshift(logEntry); // Add to beginning
+            
+            // Keep only last 500 entries
+            if (auditLog.length > 500) {
+                auditLog = auditLog.slice(0, 500);
+            }
+            
+            saveAuditLog();
+        }
+
+        function saveAuditLog() {
+            localStorage.setItem('nailSalonAuditLog', JSON.stringify(auditLog));
+        }
+
+        function loadAuditLog() {
+            const saved = localStorage.getItem('nailSalonAuditLog');
+            if (saved) {
+                auditLog = JSON.parse(saved);
+            }
+        }
+
+        function clearAuditLog() {
+            if (confirm('Are you sure you want to clear all audit logs? This cannot be undone.')) {
+                auditLog = [];
+                saveAuditLog();
+                addAuditLog('clear', 'Audit log cleared');
+                renderAuditLog();
+            }
+        }
+
+        function formatTimestamp(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins} min ago`;
+            if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+            if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+            
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        }
+
+        function filterAuditLog(filter) {
+            currentAuditFilter = filter;
+            
+            // Update filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            renderAuditLog();
+        }
+
+        function renderAuditLog() {
+            const list = document.getElementById('auditLogList');
+            
+            let filteredLog = auditLog;
+            if (currentAuditFilter !== 'all') {
+                filteredLog = auditLog.filter(entry => entry.action === currentAuditFilter);
+            }
+            
+            if (filteredLog.length === 0) {
+                list.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 40px;">No audit logs found</p>';
+                return;
+            }
+            
+            list.innerHTML = filteredLog.map(entry => `
+                <div class="audit-log-item ${entry.action}">
+                    <div class="audit-log-header">
+                        <span class="audit-log-action">${getActionIcon(entry.action)} ${getActionLabel(entry.action)}</span>
+                        <span class="audit-log-time">${formatTimestamp(entry.timestamp)}</span>
+                    </div>
+                    <div class="audit-log-details">${entry.details}</div>
+                </div>
+            `).join('');
+        }
+
+        function getActionIcon(action) {
+            const icons = {
+                'add': '➕',
+                'edit': '✏️',
+                'delete': '🗑️',
+                'hide': '👁️',
+                'turn': '🔢',
+                'working': '⚙️',
+                'done': '✅',
+                'clear': '🔄',
+                'reorder': '↕️'
+            };
+            return icons[action] || '📝';
+        }
+
+        function getActionLabel(action) {
+            const labels = {
+                'add': 'Added Employee',
+                'edit': 'Edited Employee',
+                'delete': 'Deleted Employee',
+                'hide': 'Hidden Employee',
+                'turn': 'Turn Changed',
+                'working': 'Status Changed',
+                'done': 'Completed Work',
+                'clear': 'System Reset',
+                'reorder': 'Reordered List'
+            };
+            return labels[action] || 'Action';
+        }
+
+        function showAuditLog() {
+            document.getElementById('mainPage').classList.remove('active');
+            document.getElementById('employeeListPage').classList.remove('active');
+            document.getElementById('auditLogPage').classList.add('active');
+            document.getElementById('dropdownMenu').classList.remove('show');
+            renderAuditLog();
+        }
+
+        // ========================================
+        // PASSCODE FUNCTIONS
+        // ========================================
+        function showPasscodeModal() {
+            document.getElementById('passcodeModal').classList.add('show');
+            document.getElementById('passcodeInput').value = '';
+            document.getElementById('passcodeError').style.display = 'none';
+            setTimeout(() => {
+                document.getElementById('passcodeInput').focus();
+            }, 100);
+        }
+
+        function hidePasscodeModal() {
+            document.getElementById('passcodeModal').classList.remove('show');
+            document.getElementById('passcodeInput').value = '';
+            document.getElementById('passcodeError').style.display = 'none';
+        }
+
+        function checkPasscode() {
+            const input = document.getElementById('passcodeInput').value;
+            if (input === EDIT_PASSCODE) {
+                hidePasscodeModal();
+                toggleEditMode();
+                addAuditLog('working', 'Edit mode activated');
+            } else {
+                document.getElementById('passcodeError').style.display = 'block';
+                document.getElementById('passcodeInput').value = '';
+                document.getElementById('passcodeInput').focus();
+            }
+        }
+
+        // Allow Enter key to submit passcode
+        document.addEventListener('DOMContentLoaded', function() {
+            const passcodeInput = document.getElementById('passcodeInput');
+            if (passcodeInput) {
+                passcodeInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        checkPasscode();
+                    }
+                });
+            }
+        });
+
+        // ========================================
+        // BIRTHDAY FUNCTIONS
+        // ========================================
+        function shouldShowBirthdayCake(birthMonth, birthDay) {
+            if (!birthMonth || !birthDay) return false;
+            
+            const today = new Date();
+            const currentMonth = today.getMonth() + 1; // JavaScript months are 0-indexed
+            const currentDay = today.getDate();
+            
+            // Show cake only if it's the same month AND the birthday hasn't passed yet
+            return currentMonth === birthMonth && currentDay <= birthDay;
+        }
 
         // ========================================
         // SCREEN WAKE LOCK (PREVENT SLEEP)
@@ -216,6 +1127,7 @@ const firebaseConfig = {
         // ========================================
         function init() {
             loadData();
+            loadAuditLog();
             
             if (firebaseEnabled) {
                 updateSyncStatus('saving');
@@ -322,6 +1234,7 @@ const firebaseConfig = {
                 updateButtons();
                 saveData();
                 render();
+                addAuditLog('working', 'Undo action performed');
             }
         }
 
@@ -332,6 +1245,7 @@ const firebaseConfig = {
                 updateButtons();
                 saveData();
                 render();
+                addAuditLog('working', 'Redo action performed');
             }
         }
 
@@ -344,9 +1258,15 @@ const firebaseConfig = {
         // EMPLOYEE MANAGEMENT
         // ========================================
         function setTurn(index, value) {
-            employees[index].turn = value === '' ? null : parseInt(value);
+            const oldTurn = employees[index].turn;
+            const newTurn = value === '' ? null : parseInt(value);
+            employees[index].turn = newTurn;
             saveToHistory();
             render();
+            
+            const turnText = newTurn === null ? 'removed' : `#${newTurn}`;
+            const oldText = oldTurn === null ? 'no turn' : `#${oldTurn}`;
+            addAuditLog('turn', `${employees[index].name}: Turn changed from ${oldText} to ${turnText}`);
         }
 
         function setWorking(index) {
@@ -354,6 +1274,7 @@ const firebaseConfig = {
             employees[index].turn = null;
             saveToHistory();
             render();
+            addAuditLog('working', `${employees[index].name}: Status changed to WORKING`);
         }
 
         function setDone(index) {
@@ -362,6 +1283,7 @@ const firebaseConfig = {
             employees[index].turn = maxTurn + 1;
             saveToHistory();
             render();
+            addAuditLog('done', `${employees[index].name}: Completed work, assigned turn #${maxTurn + 1}`);
         }
 
         function addEmployee() {
@@ -413,11 +1335,20 @@ const firebaseConfig = {
             
             if (editingEmployeeIndex !== null) {
                 // Editing existing employee
+                const oldName = employees[editingEmployeeIndex].name;
+                const oldBday = employees[editingEmployeeIndex].birthMonth && employees[editingEmployeeIndex].birthDay 
+                    ? `${employees[editingEmployeeIndex].birthMonth}/${employees[editingEmployeeIndex].birthDay}` 
+                    : 'not set';
+                const newBday = month && day ? `${month}/${day}` : 'not set';
+                
                 employees[editingEmployeeIndex].name = name;
                 employees[editingEmployeeIndex].birthMonth = month || null;
                 employees[editingEmployeeIndex].birthDay = day || null;
+                
+                addAuditLog('edit', `Employee edited: ${oldName} → ${name}, Birthday: ${oldBday} → ${newBday}`);
             } else {
                 // Adding new employee
+                const bday = month && day ? `${month}/${day}` : 'not set';
                 employees.push({ 
                     name: name, 
                     turn: null, 
@@ -425,6 +1356,7 @@ const firebaseConfig = {
                     birthMonth: month || null,
                     birthDay: day || null
                 });
+                addAuditLog('add', `New employee added: ${name}, Birthday: ${bday}`);
             }
             
             saveToHistory();
@@ -447,33 +1379,39 @@ const firebaseConfig = {
         }
 
         function deleteEmployee(index) {
-            console.log('=== DELETE EMPLOYEE DEBUG ===');
-            console.log('Total employees:', employees.length);
-            console.log('Index to delete:', index);
-            console.log('Employee at index:', employees[index]);
-            
-            if (!employees[index]) {
-                alert('Error: Employee not found at index ' + index);
-                console.log('ERROR: Employee not found!');
-                return;
-            }
-            
+            console.log('Opening delete confirmation for index:', index);
+            pendingDeleteIndex = index;
             const empName = employees[index].name;
-            console.log('About to show confirm dialog for:', empName);
-            
-            const confirmed = confirm(`⚠️ PERMANENT DELETE\n\nAre you sure you want to permanently delete ${empName}?\n\nThis action CANNOT be undone!`);
-            console.log('User confirmed?', confirmed);
-            
-            if (confirmed) {
-                console.log('Deleting employee:', empName);
-                employees.splice(index, 1);
-                console.log('✅ Employee deleted. Remaining:', employees.length);
+            document.getElementById('deleteEmployeeText').textContent = `Are you sure you want to permanently delete ${empName}?`;
+            document.getElementById('deleteEmployeeModal').classList.add('show');
+        }
+
+        function cancelDeleteEmployee() {
+            console.log('Delete cancelled');
+            document.getElementById('deleteEmployeeModal').classList.remove('show');
+            pendingDeleteIndex = null;
+        }
+
+        function confirmDeleteEmployee() {
+            console.log('Deleting employee at index:', pendingDeleteIndex);
+            if (pendingDeleteIndex !== null && employees[pendingDeleteIndex]) {
+                const empName = employees[pendingDeleteIndex].name;
+                const empBday = employees[pendingDeleteIndex].birthMonth && employees[pendingDeleteIndex].birthDay
+                    ? `${employees[pendingDeleteIndex].birthMonth}/${employees[pendingDeleteIndex].birthDay}`
+                    : 'not set';
+                
+                employees.splice(pendingDeleteIndex, 1);
+                console.log('✅ Employee deleted:', empName);
+                console.log('Remaining employees:', employees.length);
+                
+                addAuditLog('delete', `Employee permanently deleted: ${empName}, Birthday: ${empBday}`);
+                
                 saveToHistory();
                 render();
                 renderEmployeeList();
-            } else {
-                console.log('❌ User cancelled delete operation');
             }
+            document.getElementById('deleteEmployeeModal').classList.remove('show');
+            pendingDeleteIndex = null;
         }
 
         function toggleDropdown() {
@@ -483,12 +1421,14 @@ const firebaseConfig = {
         function showMainPage() {
             document.getElementById('mainPage').classList.add('active');
             document.getElementById('employeeListPage').classList.remove('active');
+            document.getElementById('auditLogPage').classList.remove('active');
             document.getElementById('dropdownMenu').classList.remove('show');
         }
 
         function showEmployeeList() {
             document.getElementById('mainPage').classList.remove('active');
             document.getElementById('employeeListPage').classList.add('active');
+            document.getElementById('auditLogPage').classList.remove('active');
             document.getElementById('dropdownMenu').classList.remove('show');
             renderEmployeeList();
         }
@@ -507,7 +1447,7 @@ const firebaseConfig = {
                 return `
                     <div class="employee-info-card">
                         <div class="info">
-                            <h3>${emp.name}</h3>
+                            <h3>${emp.name}${shouldShowBirthdayCake(emp.birthMonth, emp.birthDay) ? ' 🎂' : ''}</h3>
                             <p>🎂 Birthday: ${birthday}</p>
                         </div>
                         <div class="actions">
@@ -527,32 +1467,34 @@ const firebaseConfig = {
         }
 
         function removeEmployee(index) {
-            console.log('=== REMOVE EMPLOYEE DEBUG ===');
-            console.log('Total employees:', employees.length);
-            console.log('Index to remove:', index);
-            console.log('Employee at index:', employees[index]);
-            
-            if (!employees[index]) {
-                alert('Error: Employee not found at index ' + index);
-                console.log('ERROR: Employee not found!');
-                return;
-            }
-            
+            console.log('Opening hide confirmation for index:', index);
+            pendingHideIndex = index;
             const empName = employees[index].name;
-            console.log('About to show confirm dialog for:', empName);
-            
-            const confirmed = confirm(`Hide ${empName} from the queue?\n\n(They will return when you click "Clear All")`);
-            console.log('User confirmed?', confirmed);
-            
-            if (confirmed) {
-                employees[index].turn = null;
-                employees[index].status = 'hidden';
-                console.log('✅ Employee hidden successfully:', employees[index]);
+            document.getElementById('hideEmployeeText').textContent = `Hide ${empName} from the queue?`;
+            document.getElementById('hideEmployeeModal').classList.add('show');
+        }
+
+        function cancelHideEmployee() {
+            console.log('Hide cancelled');
+            document.getElementById('hideEmployeeModal').classList.remove('show');
+            pendingHideIndex = null;
+        }
+
+        function confirmHideEmployee() {
+            console.log('Hiding employee at index:', pendingHideIndex);
+            if (pendingHideIndex !== null && employees[pendingHideIndex]) {
+                const empName = employees[pendingHideIndex].name;
+                employees[pendingHideIndex].turn = null;
+                employees[pendingHideIndex].status = 'hidden';
+                console.log('✅ Employee hidden:', empName);
+                
+                addAuditLog('hide', `Employee hidden from queue: ${empName}`);
+                
                 saveToHistory();
                 render();
-            } else {
-                console.log('❌ User cancelled hide operation');
             }
+            document.getElementById('hideEmployeeModal').classList.remove('show');
+            pendingHideIndex = null;
         }
 
         // Drag and drop functions
@@ -576,13 +1518,30 @@ const firebaseConfig = {
         }
 
         function handleDragEnter(e, dropIndex) {
+            e.preventDefault();
             if (draggedIndex !== dropIndex) {
+                // Remove drag-over from all rows first
+                document.querySelectorAll('.employee-row').forEach(row => {
+                    row.classList.remove('drag-over');
+                });
+                // Add to current row
                 e.currentTarget.classList.add('drag-over');
             }
         }
 
         function handleDragLeave(e) {
-            e.currentTarget.classList.remove('drag-over');
+            // Only remove if we're actually leaving the element
+            // Check if we're entering a child element
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = e.clientX;
+            const y = e.clientY;
+            
+            // Add some padding to the detection area
+            const padding = 20;
+            if (x < rect.left - padding || x > rect.right + padding || 
+                y < rect.top - padding || y > rect.bottom + padding) {
+                e.currentTarget.classList.remove('drag-over');
+            }
         }
 
         function handleDrop(e, dropIndex) {
@@ -597,17 +1556,24 @@ const firebaseConfig = {
             });
             
             if (draggedIndex !== null && draggedIndex !== dropIndex) {
-                // Remove the dragged item
-                const draggedItem = employees[draggedIndex];
+                console.log('Drag from index', draggedIndex, 'to', dropIndex);
                 
-                // Create new array with item removed
-                const newEmployees = employees.filter((_, idx) => idx !== draggedIndex);
+                // Get the employee being dragged
+                const draggedEmployee = employees[draggedIndex];
                 
-                // Insert at new position
-                newEmployees.splice(dropIndex, 0, draggedItem);
+                // Remove from original position
+                employees.splice(draggedIndex, 1);
                 
-                // Update employees array
-                employees = newEmployees;
+                // Calculate the new insert position
+                // If dragging down (to a higher index), we need to adjust because we removed an item
+                const insertIndex = draggedIndex < dropIndex ? dropIndex - 1 : dropIndex;
+                
+                // Insert at the new position
+                employees.splice(insertIndex, 0, draggedEmployee);
+                
+                console.log('Moved', draggedEmployee.name, 'to position', insertIndex);
+                
+                addAuditLog('reorder', `${draggedEmployee.name} moved from position ${draggedIndex + 1} to ${insertIndex + 1}`);
                 
                 // Auto-adjust turn numbers for employees with turns
                 const employeesWithTurns = employees.filter(emp => emp.turn !== null && emp.status === 'waiting');
@@ -616,6 +1582,7 @@ const firebaseConfig = {
                 });
                 
                 // Re-render
+                saveToHistory();
                 render();
             }
             
@@ -643,12 +1610,15 @@ const firebaseConfig = {
                 employeesBackup = JSON.parse(JSON.stringify(employees));
                 btn.textContent = 'Save';
                 btn.classList.add('active');
+                btn.onclick = function() { toggleEditMode(); }; // Direct save, no passcode needed
             } else {
                 // Exiting edit mode with save
                 employeesBackup = null;
                 btn.textContent = 'Edit';
                 btn.classList.remove('active');
+                btn.onclick = function() { showPasscodeModal(); }; // Passcode required to enter edit mode
                 saveToHistory();
+                addAuditLog('working', 'Edit mode deactivated, changes saved');
             }
             render();
         }
@@ -663,6 +1633,7 @@ const firebaseConfig = {
             btn.textContent = 'Edit';
             btn.classList.remove('active');
             render();
+            addAuditLog('working', 'Edit mode cancelled, changes discarded');
         }
 
         function showClearModal() {
@@ -674,6 +1645,7 @@ const firebaseConfig = {
         }
 
         function confirmClearAll() {
+            const hiddenCount = employees.filter(e => e.status === 'hidden').length;
             employees = employees.map(emp => ({ 
                 ...emp, 
                 turn: null, 
@@ -682,6 +1654,8 @@ const firebaseConfig = {
             saveToHistory();
             render();
             hideClearModal();
+            
+            addAuditLog('clear', `All turns and statuses cleared. ${hiddenCount} hidden employee(s) restored.`);
         }
 
         // ========================================
@@ -717,7 +1691,7 @@ const firebaseConfig = {
             if (nextEmployee) {
                 nextBanner.innerHTML = `
                     <p>Next Turn:</p>
-                    <p class="name">${nextEmployee.name}</p>
+                    <p class="name">${nextEmployee.name}${shouldShowBirthdayCake(nextEmployee.birthMonth, nextEmployee.birthDay) ? ' 🎂' : ''}</p>
                     <p class="turn">Turn #${nextEmployee.turn}</p>
                 `;
                 nextBanner.className = 'next-banner';
@@ -747,16 +1721,17 @@ const firebaseConfig = {
                         ondragenter="handleDragEnter(event, ${actualIndex})"
                         ondragleave="handleDragLeave(event)"
                         ondrop="handleDrop(event, ${actualIndex})"
-                        ondragend="handleDragEnd(event)">
+                        ondragend="handleDragEnd(event)"
+                        style="touch-action: none;">
                         ${editMode ? `
-                            <div class="drag-handle">
-                                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                            <div class="drag-handle" style="min-width: 40px; min-height: 40px; display: flex; align-items: center; justify-content: center;">
+                                <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M9 3h2v2H9V3zm0 4h2v2H9V7zm0 4h2v2H9v-2zm0 4h2v2H9v-2zm0 4h2v2H9v-2zm4-16h2v2h-2V3zm0 4h2v2h-2V7zm0 4h2v2h-2v-2zm0 4h2v2h-2v-2zm0 4h2v2h-2v-2z"/>
                                 </svg>
                             </div>
                         ` : ''}
                         <div class="employee-name">
-                            <span>${emp.name}</span>
+                            <span>${emp.name}${shouldShowBirthdayCake(emp.birthMonth, emp.birthDay) ? ' 🎂' : ''}</span>
                             ${editMode ? `
                                 <button class="remove-btn" onclick="event.stopPropagation(); console.log('X clicked for index: ${actualIndex}'); removeEmployee(${actualIndex}); return false;">
                                     <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -788,7 +1763,7 @@ const firebaseConfig = {
                 summaryCard.style.display = 'block';
                 summaryList.innerHTML = summary.map(emp => `
                     <div class="summary-item">
-                        <span>${emp.name}</span>
+                        <span>${emp.name}${shouldShowBirthdayCake(emp.birthMonth, emp.birthDay) ? ' 🎂' : ''}</span>
                         <span>${emp.status === 'working' ? 'WORKING' : '#' + emp.turn}</span>
                     </div>
                 `).join('');
