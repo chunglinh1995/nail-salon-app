@@ -275,6 +275,15 @@
             background: #fef3c7;
             border-color: #fbbf24;
         }
+        .employee-row.edit-mode-row {
+            touch-action: none;
+            cursor: move;
+        }
+        .employee-row:not(.edit-mode-row) {
+            cursor: default;
+            user-select: text;
+            -webkit-user-select: text;
+        }
         .employee-name {
             flex: 1;
             display: flex;
@@ -669,7 +678,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                     </svg>
                     <div>
-                        <h1>Employee Turns V19</h1>
+                        <h1>Employee Turns V20</h1>
                         <div class="sync-status">
                             <svg class="sync-icon offline" id="syncIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
@@ -1498,12 +1507,39 @@ const firebaseConfig = {
         }
 
         // Drag and drop functions
-        function handleDragStart(e, index) {
-            draggedIndex = index;
+        function handleDragStartByDisplay(e, displayIdx) {
+            draggedIndex = displayIdx;
+            console.log('Drag started at display index:', displayIdx);
+            
             e.currentTarget.classList.add('dragging');
-            e.currentTarget.setAttribute('data-index', index);
+            e.currentTarget.setAttribute('data-index', displayIdx);
             e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', index);
+            e.dataTransfer.setData('text/plain', displayIdx);
+            e.currentTarget.style.webkitUserSelect = 'none';
+            e.currentTarget.style.userSelect = 'none';
+        }
+
+        function handleDragStart(e, index) {
+            // Store the display index, not the actual array index
+            const displayList = editMode ? 
+                (() => {
+                    const withNumbers = employees.filter(e => e.turn !== null && e.status === 'waiting').sort((a, b) => a.turn - b.turn);
+                    const working = employees.filter(e => e.status === 'working');
+                    const withoutNumbers = employees.filter(e => e.turn === null && e.status === 'waiting');
+                    return [...withNumbers, ...working, ...withoutNumbers];
+                })() : 
+                getSortedEmployees();
+            
+            // Find the display index of this employee
+            const employee = employees[index];
+            draggedIndex = displayList.indexOf(employee);
+            
+            console.log('Drag started - Employee:', employee.name, 'Display index:', draggedIndex);
+            
+            e.currentTarget.classList.add('dragging');
+            e.currentTarget.setAttribute('data-index', draggedIndex);
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', draggedIndex);
             // Prevent text selection popup on mobile
             e.currentTarget.style.webkitUserSelect = 'none';
             e.currentTarget.style.userSelect = 'none';
@@ -1519,12 +1555,36 @@ const firebaseConfig = {
 
         function handleDragEnter(e, dropIndex) {
             e.preventDefault();
-            if (draggedIndex !== dropIndex) {
+            
+            // Get display index instead of actual array index
+            const displayList = editMode ? 
+                (() => {
+                    const withNumbers = employees.filter(e => e.turn !== null && e.status === 'waiting').sort((a, b) => a.turn - b.turn);
+                    const working = employees.filter(e => e.status === 'working');
+                    const withoutNumbers = employees.filter(e => e.turn === null && e.status === 'waiting');
+                    return [...withNumbers, ...working, ...withoutNumbers];
+                })() : 
+                getSortedEmployees();
+            
+            const employee = employees[dropIndex];
+            const displayIdx = displayList.indexOf(employee);
+            
+            if (draggedIndex !== displayIdx) {
                 // Remove drag-over from all rows first
                 document.querySelectorAll('.employee-row').forEach(row => {
                     row.classList.remove('drag-over');
                 });
                 // Add to current row
+                e.currentTarget.classList.add('drag-over');
+            }
+        }
+
+        function handleDragEnterByDisplay(e, displayIdx) {
+            e.preventDefault();
+            if (draggedIndex !== displayIdx) {
+                document.querySelectorAll('.employee-row').forEach(row => {
+                    row.classList.remove('drag-over');
+                });
                 e.currentTarget.classList.add('drag-over');
             }
         }
@@ -1556,36 +1616,90 @@ const firebaseConfig = {
             });
             
             if (draggedIndex !== null && draggedIndex !== dropIndex) {
-                console.log('Drag from index', draggedIndex, 'to', dropIndex);
+                console.log('Drag from display index', draggedIndex, 'to', dropIndex);
                 
-                // Get the employee being dragged
-                const draggedEmployee = employees[draggedIndex];
+                // Get the current display list to find the actual employees
+                const displayList = editMode ? 
+                    (() => {
+                        const withNumbers = employees.filter(e => e.turn !== null && e.status === 'waiting').sort((a, b) => a.turn - b.turn);
+                        const working = employees.filter(e => e.status === 'working');
+                        const withoutNumbers = employees.filter(e => e.turn === null && e.status === 'waiting');
+                        return [...withNumbers, ...working, ...withoutNumbers];
+                    })() : 
+                    getSortedEmployees();
                 
-                // Remove from original position
-                employees.splice(draggedIndex, 1);
+                // Get the actual employee objects from display positions
+                const draggedEmployee = displayList[draggedIndex];
+                const targetEmployee = displayList[dropIndex];
                 
-                // Calculate the new insert position
-                // If dragging down (to a higher index), we need to adjust because we removed an item
-                const insertIndex = draggedIndex < dropIndex ? dropIndex - 1 : dropIndex;
+                console.log('Swapping:', draggedEmployee.name, 'with', targetEmployee.name);
+                console.log('Before swap - Dragged turn:', draggedEmployee.turn, 'Target turn:', targetEmployee.turn);
                 
-                // Insert at the new position
-                employees.splice(insertIndex, 0, draggedEmployee);
+                // Simply swap their turn numbers directly
+                const tempTurn = draggedEmployee.turn;
+                draggedEmployee.turn = targetEmployee.turn;
+                targetEmployee.turn = tempTurn;
                 
-                console.log('Moved', draggedEmployee.name, 'to position', insertIndex);
+                console.log('After swap - Dragged turn:', draggedEmployee.turn, 'Target turn:', targetEmployee.turn);
                 
-                addAuditLog('reorder', `${draggedEmployee.name} moved from position ${draggedIndex + 1} to ${insertIndex + 1}`);
-                
-                // Auto-adjust turn numbers for employees with turns
-                const employeesWithTurns = employees.filter(emp => emp.turn !== null && emp.status === 'waiting');
-                employeesWithTurns.forEach((emp, idx) => {
-                    emp.turn = idx + 1;
-                });
+                if (tempTurn !== null || targetEmployee.turn !== null) {
+                    const dragTurnText = draggedEmployee.turn !== null ? `Turn #${draggedEmployee.turn}` : 'no turn';
+                    const targetTurnText = targetEmployee.turn !== null ? `Turn #${targetEmployee.turn}` : 'no turn';
+                    addAuditLog('reorder', `Swapped: ${draggedEmployee.name} (${dragTurnText}) ↔ ${targetEmployee.name} (${targetTurnText})`);
+                }
                 
                 // Re-render
                 saveToHistory();
                 render();
             }
             
+            draggedIndex = null;
+            return false;
+        }
+
+        function handleDropByDisplay(e, displayIdx) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            document.querySelectorAll('.employee-row').forEach(row => {
+                row.classList.remove('drag-over');
+                row.style.webkitUserSelect = '';
+                row.style.userSelect = '';
+            });
+            
+            if (draggedIndex !== null && draggedIndex !== displayIdx) {
+                console.log('Drop: swapping display positions', draggedIndex, 'and', displayIdx);
+                
+                const displayList = editMode ? 
+                    (() => {
+                        const withNumbers = employees.filter(e => e.turn !== null && e.status === 'waiting').sort((a, b) => a.turn - b.turn);
+                        const working = employees.filter(e => e.status === 'working');
+                        const withoutNumbers = employees.filter(e => e.turn === null && e.status === 'waiting');
+                        return [...withNumbers, ...working, ...withoutNumbers];
+                    })() : 
+                    getSortedEmployees();
+                
+                const draggedEmployee = displayList[draggedIndex];
+                const targetEmployee = displayList[displayIdx];
+                
+                console.log('Swapping turns:', draggedEmployee.name, '(Turn', draggedEmployee.turn, ') ↔', targetEmployee.name, '(Turn', targetEmployee.turn, ')');
+                
+                // Swap turn numbers only
+                const tempTurn = draggedEmployee.turn;
+                draggedEmployee.turn = targetEmployee.turn;
+                targetEmployee.turn = tempTurn;
+                
+                console.log('After swap:', draggedEmployee.name, '(Turn', draggedEmployee.turn, '),', targetEmployee.name, '(Turn', targetEmployee.turn, ')');
+                
+                const dragTurnText = draggedEmployee.turn !== null ? `Turn #${draggedEmployee.turn}` : 'no turn';
+                const targetTurnText = targetEmployee.turn !== null ? `Turn #${targetEmployee.turn}` : 'no turn';
+                addAuditLog('reorder', `Swapped: ${draggedEmployee.name} (${dragTurnText}) ↔ ${targetEmployee.name} (${targetTurnText})`);
+                
+                saveToHistory();
+                render();
+            }
+            
+            draggedIndex = null;
             return false;
         }
 
@@ -1713,16 +1827,16 @@ const firebaseConfig = {
                 console.log(`Employee ${emp.name}: displayIdx=${displayIdx}, actualIndex=${actualIndex}`);
                 
                 return `
-                    <div class="employee-row ${emp.status === 'working' ? 'working' : ''}" 
+                    <div class="employee-row ${emp.status === 'working' ? 'working' : ''} ${editMode ? 'edit-mode-row' : ''}" 
                         data-actual-index="${actualIndex}"
-                        draggable="${editMode}" 
-                        ondragstart="handleDragStart(event, ${actualIndex})"
-                        ondragover="handleDragOver(event)"
-                        ondragenter="handleDragEnter(event, ${actualIndex})"
-                        ondragleave="handleDragLeave(event)"
-                        ondrop="handleDrop(event, ${actualIndex})"
-                        ondragend="handleDragEnd(event)"
-                        style="touch-action: none;">
+                        data-display-index="${displayIdx}"
+                        draggable="${editMode ? 'true' : 'false'}" 
+                        ondragstart="${editMode ? 'handleDragStartByDisplay(event, ' + displayIdx + ')' : 'return false;'}"
+                        ondragover="${editMode ? 'handleDragOver(event)' : 'return false;'}"
+                        ondragenter="${editMode ? 'handleDragEnterByDisplay(event, ' + displayIdx + ')' : 'return false;'}"
+                        ondragleave="${editMode ? 'handleDragLeave(event)' : 'return false;'}"
+                        ondrop="${editMode ? 'handleDropByDisplay(event, ' + displayIdx + ')' : 'return false;'}"
+                        ondragend="${editMode ? 'handleDragEnd(event)' : 'return false;'}">
                         ${editMode ? `
                             <div class="drag-handle" style="min-width: 40px; min-height: 40px; display: flex; align-items: center; justify-content: center;">
                                 <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
