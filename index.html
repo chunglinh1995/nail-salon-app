@@ -667,6 +667,75 @@
             margin-top: 8px;
             text-align: center;
         }
+        
+        /* Timer Styles */
+        .timer-display {
+            font-size: 20px;
+            font-weight: bold;
+            color: #3b82f6;
+            min-width: 100px;
+            text-align: center;
+        }
+        .timer-display.warning {
+            color: #f59e0b;
+        }
+        .timer-display.danger {
+            color: #ef4444;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.5; }
+        }
+        
+        /* History Styles */
+        .history-item {
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-left: 4px solid #10b981;
+        }
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .history-name {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 18px;
+        }
+        .history-date {
+            color: #6b7280;
+            font-size: 14px;
+        }
+        .history-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            color: #4b5563;
+            font-size: 14px;
+        }
+        .history-detail {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .history-filters {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .date-filter {
+            padding: 8px 12px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -678,7 +747,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                     </svg>
                     <div>
-                        <h1>Employee Turns V20</h1>
+                        <h1>Employee Turns V21</h1>
                         <div class="sync-status">
                             <svg class="sync-icon offline" id="syncIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
@@ -695,6 +764,7 @@
                         <div class="dropdown-content" id="dropdownMenu">
                             <button onclick="showEmployeeList()">👥 Employee List</button>
                             <button onclick="showAddEmployeeModal()">➕ Add New Employee</button>
+                            <button onclick="showWorkHistory()">🕐 Work History</button>
                             <button onclick="showAuditLog()">📋 Audit Log</button>
                         </div>
                     </div>
@@ -724,7 +794,7 @@
         </div>
 
         <div class="update-banner">
-            📱 <a href="https://github.com/chunglinh1995/nail-salon-app/releases/download/NEW/TurnManager.apk" target="_blank">Download Latest Version</a>
+            📱 <a href="https://chungling1995.github.io/nail-salon-app/" target="_blank">Download Latest Version</a>
         </div>
     </div>
 
@@ -766,6 +836,50 @@
         </div>
     </div>
 
+    <!-- History Page -->
+    <div class="container page" id="historyPage">
+        <div class="card">
+            <div class="header">
+                <div class="title-group">
+                    <button class="btn-secondary" onclick="showMainPage()">← Back</button>
+                    <h1>📜 Work History</h1>
+                </div>
+                <button class="btn-danger btn-small" onclick="clearHistory()">Clear History</button>
+            </div>
+            
+            <div class="history-filters">
+                <input type="date" id="filterStartDate" class="date-filter" onchange="filterHistory()">
+                <span style="align-self: center;">to</span>
+                <input type="date" id="filterEndDate" class="date-filter" onchange="filterHistory()">
+                <button class="btn-primary btn-small" onclick="clearHistoryFilter()">Show All</button>
+            </div>
+            
+            <div id="historyList"></div>
+        </div>
+    </div>
+
+    <!-- Work History Page -->
+    <div class="container page" id="workHistoryPage">
+        <div class="card">
+            <div class="header">
+                <div class="title-group">
+                    <button class="btn-secondary" onclick="showMainPage()">← Back</button>
+                    <h1>🕐 Work History</h1>
+                </div>
+                <button class="btn-danger btn-small" onclick="clearWorkHistory()">Clear History</button>
+            </div>
+            
+            <div class="history-filters">
+                <input type="date" id="filterStartDate" class="date-filter" onchange="filterWorkHistory()">
+                <span style="align-self: center;">to</span>
+                <input type="date" id="filterEndDate" class="date-filter" onchange="filterWorkHistory()">
+                <button class="btn-primary btn-small" onclick="clearWorkHistoryFilter()">Show All</button>
+            </div>
+            
+            <div id="workHistoryList"></div>
+        </div>
+    </div>
+
     <!-- Passcode Modal -->
     <div class="modal" id="passcodeModal">
         <div class="modal-content">
@@ -800,6 +914,12 @@
                     <input type="number" id="newEmpMonth" placeholder="Month (1-12)" min="1" max="12">
                     <input type="number" id="newEmpDay" placeholder="Day (1-31)" min="1" max="31">
                 </div>
+            </div>
+            <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" id="newEmpBirthdayReminder" checked style="width: auto; cursor: pointer;">
+                    <span>Show birthday cake reminder 🎂</span>
+                </label>
             </div>
             <div class="modal-buttons">
                 <button class="btn-secondary" onclick="hideAddEmployeeModal()">Cancel</button>
@@ -890,18 +1010,18 @@ const firebaseConfig = {
         // APP STATE
         // ========================================
         let employees = [
-            { name: 'Hai', turn: null, status: 'waiting', birthMonth: null, birthDay: null },
-            { name: 'Jessica', turn: null, status: 'waiting', birthMonth: null, birthDay: null },
-            { name: 'Tuấn', turn: null, status: 'waiting', birthMonth: null, birthDay: null },
-            { name: 'Chien', turn: null, status: 'waiting', birthMonth: null, birthDay: null },
-            { name: 'Queenie', turn: null, status: 'waiting', birthMonth: null, birthDay: null },
-            { name: 'Ling', turn: null, status: 'waiting', birthMonth: null, birthDay: null },
-            { name: 'Huyền', turn: null, status: 'waiting', birthMonth: null, birthDay: null },
-            { name: 'Katey', turn: null, status: 'waiting', birthMonth: null, birthDay: null },
-            { name: 'Liễu', turn: null, status: 'waiting', birthMonth: null, birthDay: null },
-            { name: 'Duyên', turn: null, status: 'waiting', birthMonth: null, birthDay: null },
-            { name: 'Cường', turn: null, status: 'waiting', birthMonth: null, birthDay: null },
-            { name: 'Chung', turn: null, status: 'waiting', birthMonth: null, birthDay: null }
+            { name: 'Hai', turn: null, status: 'waiting', birthMonth: null, birthDay: null, birthdayReminderEnabled: true },
+            { name: 'Jessica', turn: null, status: 'waiting', birthMonth: null, birthDay: null, birthdayReminderEnabled: true },
+            { name: 'Tuấn', turn: null, status: 'waiting', birthMonth: null, birthDay: null, birthdayReminderEnabled: true },
+            { name: 'Chien', turn: null, status: 'waiting', birthMonth: null, birthDay: null, birthdayReminderEnabled: true },
+            { name: 'Queenie', turn: null, status: 'waiting', birthMonth: null, birthDay: null, birthdayReminderEnabled: true },
+            { name: 'Ling', turn: null, status: 'waiting', birthMonth: null, birthDay: null, birthdayReminderEnabled: true },
+            { name: 'Huyền', turn: null, status: 'waiting', birthMonth: null, birthDay: null, birthdayReminderEnabled: true },
+            { name: 'Katey', turn: null, status: 'waiting', birthMonth: null, birthDay: null, birthdayReminderEnabled: true },
+            { name: 'Liễu', turn: null, status: 'waiting', birthMonth: null, birthDay: null, birthdayReminderEnabled: true },
+            { name: 'Duyên', turn: null, status: 'waiting', birthMonth: null, birthDay: null, birthdayReminderEnabled: true },
+            { name: 'Cường', turn: null, status: 'waiting', birthMonth: null, birthDay: null, birthdayReminderEnabled: true },
+            { name: 'Chung', turn: null, status: 'waiting', birthMonth: null, birthDay: null, birthdayReminderEnabled: true }
         ];
         let history = [];
         let historyIndex = -1;
@@ -917,6 +1037,10 @@ const firebaseConfig = {
         let pendingDeleteIndex = null;
         let auditLog = [];
         let currentAuditFilter = 'all';
+        let workHistory = [];
+        let timerIntervals = {};
+        let startTimes = {};
+
 
         // ========================================
         // AUDIT LOG FUNCTIONS
@@ -1042,9 +1166,365 @@ const firebaseConfig = {
         function showAuditLog() {
             document.getElementById('mainPage').classList.remove('active');
             document.getElementById('employeeListPage').classList.remove('active');
+            document.getElementById('historyPage').classList.remove('active');
             document.getElementById('auditLogPage').classList.add('active');
             document.getElementById('dropdownMenu').classList.remove('show');
             renderAuditLog();
+        }
+
+        // ========================================
+        // TIMER FUNCTIONS
+        // ========================================
+        function startTimer(index) {
+            const employee = employees[index];
+            startTimes[index] = Date.now();
+            employee.workStartTime = Date.now();
+            
+            // Clear any existing timer
+            if (timerIntervals[index]) {
+                clearInterval(timerIntervals[index]);
+            }
+            
+            // Start new timer
+            timerIntervals[index] = setInterval(() => {
+                render();
+            }, 1000);
+        }
+
+        function stopTimer(index) {
+            if (timerIntervals[index]) {
+                clearInterval(timerIntervals[index]);
+                delete timerIntervals[index];
+            }
+            delete startTimes[index];
+        }
+
+        function getElapsedTime(startTime) {
+            if (!startTime) return '00:00:00';
+            const elapsed = Date.now() - startTime;
+            const hours = Math.floor(elapsed / 3600000);
+            const minutes = Math.floor((elapsed % 3600000) / 60000);
+            const seconds = Math.floor((elapsed % 60000) / 1000);
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function getTimerClass(startTime) {
+            if (!startTime) return '';
+            const elapsed = Date.now() - startTime;
+            const minutes = elapsed / 60000;
+            if (minutes > 90) return 'danger'; // Over 1.5 hours
+            if (minutes > 60) return 'warning'; // Over 1 hour
+            return '';
+        }
+
+        // ========================================
+        // WORK HISTORY FUNCTIONS
+        // ========================================
+        function saveToHistory(employeeIndex) {
+            const employee = employees[employeeIndex];
+            const workStartTime = employee.workStartTime || Date.now();
+            const workEndTime = Date.now();
+            const duration = workEndTime - workStartTime;
+            
+            const historyEntry = {
+                employeeName: employee.name,
+                turnNumber: employee.turn,
+                startTime: workStartTime,
+                endTime: workEndTime,
+                duration: duration,
+                date: new Date().toISOString()
+            };
+            
+            workHistory.unshift(historyEntry);
+            
+            // Keep only last 1000 entries
+            if (workHistory.length > 1000) {
+                workHistory = workHistory.slice(0, 1000);
+            }
+            
+            saveWorkHistory();
+            
+            const durationMin = Math.floor(duration / 60000);
+            addAuditLog('done', `${employee.name} completed work in ${durationMin} minutes`);
+        }
+
+        function loadWorkHistory() {
+            const saved = localStorage.getItem('nailSalonWorkHistory');
+            if (saved) {
+                workHistory = JSON.parse(saved);
+            }
+        }
+
+        function saveWorkHistory() {
+            localStorage.setItem('nailSalonWorkHistory', JSON.stringify(workHistory));
+        }
+
+        function clearHistory() {
+            if (confirm('Are you sure you want to clear all work history? This cannot be undone.')) {
+                workHistory = [];
+                saveWorkHistory();
+                renderHistory();
+                addAuditLog('clear', 'Work history cleared');
+            }
+        }
+
+        function filterHistory() {
+            renderHistory();
+        }
+
+        function clearHistoryFilter() {
+            document.getElementById('filterStartDate').value = '';
+            document.getElementById('filterEndDate').value = '';
+            renderHistory();
+        }
+
+        function showHistory() {
+            document.getElementById('mainPage').classList.remove('active');
+            document.getElementById('employeeListPage').classList.remove('active');
+            document.getElementById('auditLogPage').classList.remove('active');
+            document.getElementById('historyPage').classList.add('active');
+            document.getElementById('dropdownMenu').classList.remove('show');
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('historyList');
+            const startDate = document.getElementById('filterStartDate').value;
+            const endDate = document.getElementById('filterEndDate').value;
+            
+            let filteredHistory = workHistory;
+            
+            if (startDate || endDate) {
+                filteredHistory = workHistory.filter(entry => {
+                    const entryDate = new Date(entry.date).toISOString().split('T')[0];
+                    if (startDate && entryDate < startDate) return false;
+                    if (endDate && entryDate > endDate) return false;
+                    return true;
+                });
+            }
+            
+            if (filteredHistory.length === 0) {
+                list.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 40px;">No work history found</p>';
+                return;
+            }
+            
+            list.innerHTML = filteredHistory.map(entry => {
+                const durationMin = Math.floor(entry.duration / 60000);
+                const durationSec = Math.floor((entry.duration % 60000) / 1000);
+                const startTime = new Date(entry.startTime);
+                const endTime = new Date(entry.endTime);
+                
+                return `
+                    <div class="history-item">
+                        <div class="history-header">
+                            <span class="history-name">${entry.employeeName}</span>
+                            <span class="history-date">${formatTimestamp(entry.date)}</span>
+                        </div>
+                        <div class="history-details">
+                            <div class="history-detail">
+                                <span>🔢 Turn:</span>
+                                <span>${entry.turnNumber !== null ? '#' + entry.turnNumber : 'N/A'}</span>
+                            </div>
+                            <div class="history-detail">
+                                <span>⏱️ Duration:</span>
+                                <span>${durationMin}m ${durationSec}s</span>
+                            </div>
+                            <div class="history-detail">
+                                <span>🕐 Start:</span>
+                                <span>${startTime.toLocaleTimeString()}</span>
+                            </div>
+                            <div class="history-detail">
+                                <span>🕐 End:</span>
+                                <span>${endTime.toLocaleTimeString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ========================================
+        // TIMER FUNCTIONS
+        // ========================================
+        function startTimer(index) {
+            const employee = employees[index];
+            employee.workStartTime = Date.now();
+            
+            // Clear any existing timer
+            if (timerIntervals[index]) {
+                clearInterval(timerIntervals[index]);
+            }
+            
+            // Update timer display every second, but only update timer displays, not full render
+            timerIntervals[index] = setInterval(() => {
+                updateTimerDisplays();
+            }, 1000);
+        }
+
+        function updateTimerDisplays() {
+            // Only update timer displays, not the entire page
+            employees.forEach((emp, index) => {
+                if (emp.status === 'working' && emp.workStartTime) {
+                    const timerElement = document.querySelector(`[data-timer-index="${index}"]`);
+                    if (timerElement) {
+                        timerElement.textContent = getElapsedTime(emp.workStartTime);
+                        timerElement.className = 'timer-display ' + getTimerClass(emp.workStartTime);
+                    }
+                }
+            });
+        }
+
+        function stopTimer(index) {
+            if (timerIntervals[index]) {
+                clearInterval(timerIntervals[index]);
+                delete timerIntervals[index];
+            }
+        }
+
+        function getElapsedTime(startTime) {
+            if (!startTime) return '00:00:00';
+            const elapsed = Date.now() - startTime;
+            const hours = Math.floor(elapsed / 3600000);
+            const minutes = Math.floor((elapsed % 3600000) / 60000);
+            const seconds = Math.floor((elapsed % 60000) / 1000);
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function getTimerClass(startTime) {
+            if (!startTime) return '';
+            const elapsed = Date.now() - startTime;
+            const minutes = elapsed / 60000;
+            if (minutes > 90) return 'danger'; // Over 1.5 hours
+            if (minutes > 60) return 'warning'; // Over 1 hour
+            return '';
+        }
+
+        // ========================================
+        // WORK HISTORY FUNCTIONS
+        // ========================================
+        function saveToWorkHistory(employeeIndex) {
+            const employee = employees[employeeIndex];
+            if (!employee.workStartTime) return;
+            
+            const endTime = Date.now();
+            const duration = endTime - employee.workStartTime;
+            
+            const historyEntry = {
+                employeeName: employee.name,
+                turnNumber: employee.turn,
+                startTime: employee.workStartTime,
+                endTime: endTime,
+                duration: duration,
+                date: new Date().toISOString()
+            };
+            
+            workHistory.unshift(historyEntry); // Add to beginning
+            
+            // Keep only last 1000 entries
+            if (workHistory.length > 1000) {
+                workHistory = workHistory.slice(0, 1000);
+            }
+            
+            saveWorkHistoryToStorage();
+            
+            const durationMin = Math.floor(duration / 60000);
+            addAuditLog('done', `${employee.name}: Completed work (Duration: ${durationMin} minutes)`);
+        }
+
+        function loadWorkHistory() {
+            const saved = localStorage.getItem('nailSalonWorkHistory');
+            if (saved) {
+                workHistory = JSON.parse(saved);
+            }
+        }
+
+        function saveWorkHistoryToStorage() {
+            localStorage.setItem('nailSalonWorkHistory', JSON.stringify(workHistory));
+        }
+
+        function clearWorkHistory() {
+            if (confirm('Are you sure you want to clear all work history? This cannot be undone.')) {
+                workHistory = [];
+                saveWorkHistoryToStorage();
+                renderWorkHistory();
+                addAuditLog('clear', 'Work history cleared');
+            }
+        }
+
+        function clearWorkHistoryFilter() {
+            document.getElementById('filterStartDate').value = '';
+            document.getElementById('filterEndDate').value = '';
+            renderWorkHistory();
+        }
+
+        function filterWorkHistory() {
+            renderWorkHistory();
+        }
+
+        function showWorkHistory() {
+            document.getElementById('mainPage').classList.remove('active');
+            document.getElementById('employeeListPage').classList.remove('active');
+            document.getElementById('auditLogPage').classList.remove('active');
+            document.getElementById('workHistoryPage').classList.add('active');
+            document.getElementById('dropdownMenu').classList.remove('show');
+            renderWorkHistory();
+        }
+
+        function renderWorkHistory() {
+            const list = document.getElementById('workHistoryList');
+            const startDate = document.getElementById('filterStartDate').value;
+            const endDate = document.getElementById('filterEndDate').value;
+            
+            let filteredHistory = workHistory;
+            
+            if (startDate || endDate) {
+                filteredHistory = workHistory.filter(entry => {
+                    const entryDate = new Date(entry.date).toISOString().split('T')[0];
+                    if (startDate && entryDate < startDate) return false;
+                    if (endDate && entryDate > endDate) return false;
+                    return true;
+                });
+            }
+            
+            if (filteredHistory.length === 0) {
+                list.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 40px;">No work history found</p>';
+                return;
+            }
+            
+            list.innerHTML = filteredHistory.map(entry => {
+                const durationMin = Math.floor(entry.duration / 60000);
+                const durationSec = Math.floor((entry.duration % 60000) / 1000);
+                const startTime = new Date(entry.startTime);
+                const endTime = new Date(entry.endTime);
+                const date = new Date(entry.date);
+                
+                return `
+                    <div class="history-item">
+                        <div class="history-header">
+                            <span class="history-name">${entry.employeeName}</span>
+                            <span class="history-date">${formatTimestamp(entry.date)}</span>
+                        </div>
+                        <div class="history-details">
+                            <div class="history-detail">
+                                <span>🔢 Turn:</span>
+                                <span>${entry.turnNumber !== null ? '#' + entry.turnNumber : 'N/A'}</span>
+                            </div>
+                            <div class="history-detail">
+                                <span>⏱️ Duration:</span>
+                                <span>${durationMin}m ${durationSec}s</span>
+                            </div>
+                            <div class="history-detail">
+                                <span>🕐 Start:</span>
+                                <span>${startTime.toLocaleTimeString()}</span>
+                            </div>
+                            <div class="history-detail">
+                                <span>🕐 End:</span>
+                                <span>${endTime.toLocaleTimeString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         // ========================================
@@ -1093,8 +1573,9 @@ const firebaseConfig = {
         // ========================================
         // BIRTHDAY FUNCTIONS
         // ========================================
-        function shouldShowBirthdayCake(birthMonth, birthDay) {
+        function shouldShowBirthdayCake(birthMonth, birthDay, birthdayReminderEnabled) {
             if (!birthMonth || !birthDay) return false;
+            if (birthdayReminderEnabled === false) return false; // Check if reminders are disabled
             
             const today = new Date();
             const currentMonth = today.getMonth() + 1; // JavaScript months are 0-indexed
@@ -1137,6 +1618,14 @@ const firebaseConfig = {
         function init() {
             loadData();
             loadAuditLog();
+            loadWorkHistory();
+            
+            // Restart timers for any employees that are working
+            employees.forEach((emp, index) => {
+                if (emp.status === 'working' && emp.workStartTime) {
+                    startTimer(index);
+                }
+            });
             
             if (firebaseEnabled) {
                 updateSyncStatus('saving');
@@ -1281,18 +1770,24 @@ const firebaseConfig = {
         function setWorking(index) {
             employees[index].status = 'working';
             employees[index].turn = null;
+            startTimer(index);
             saveToHistory();
             render();
-            addAuditLog('working', `${employees[index].name}: Status changed to WORKING`);
+            addAuditLog('working', `${employees[index].name}: Status changed to WORKING (timer started)`);
         }
 
         function setDone(index) {
+            const employee = employees[index];
+            stopTimer(index);
+            saveToWorkHistory(index);
+            
             const maxTurn = Math.max(0, ...employees.map(e => e.turn || 0));
-            employees[index].status = 'waiting';
-            employees[index].turn = maxTurn + 1;
+            employee.status = 'waiting';
+            employee.turn = maxTurn + 1;
+            delete employee.workStartTime;
+            
             saveToHistory();
             render();
-            addAuditLog('done', `${employees[index].name}: Completed work, assigned turn #${maxTurn + 1}`);
         }
 
         function addEmployee() {
@@ -1326,6 +1821,7 @@ const firebaseConfig = {
             const name = document.getElementById('newEmpName').value.trim();
             const month = parseInt(document.getElementById('newEmpMonth').value);
             const day = parseInt(document.getElementById('newEmpDay').value);
+            const birthdayReminderEnabled = document.getElementById('newEmpBirthdayReminder').checked;
             
             if (!name) {
                 alert('Please enter employee name');
@@ -1353,8 +1849,9 @@ const firebaseConfig = {
                 employees[editingEmployeeIndex].name = name;
                 employees[editingEmployeeIndex].birthMonth = month || null;
                 employees[editingEmployeeIndex].birthDay = day || null;
+                employees[editingEmployeeIndex].birthdayReminderEnabled = birthdayReminderEnabled;
                 
-                addAuditLog('edit', `Employee edited: ${oldName} → ${name}, Birthday: ${oldBday} → ${newBday}`);
+                addAuditLog('edit', `Employee edited: ${oldName} → ${name}, Birthday: ${oldBday} → ${newBday}, Reminder: ${birthdayReminderEnabled ? 'ON' : 'OFF'}`);
             } else {
                 // Adding new employee
                 const bday = month && day ? `${month}/${day}` : 'not set';
@@ -1363,9 +1860,10 @@ const firebaseConfig = {
                     turn: null, 
                     status: 'waiting',
                     birthMonth: month || null,
-                    birthDay: day || null
+                    birthDay: day || null,
+                    birthdayReminderEnabled: birthdayReminderEnabled
                 });
-                addAuditLog('add', `New employee added: ${name}, Birthday: ${bday}`);
+                addAuditLog('add', `New employee added: ${name}, Birthday: ${bday}, Reminder: ${birthdayReminderEnabled ? 'ON' : 'OFF'}`);
             }
             
             saveToHistory();
@@ -1383,6 +1881,7 @@ const firebaseConfig = {
             document.getElementById('newEmpName').value = emp.name;
             document.getElementById('newEmpMonth').value = emp.birthMonth || '';
             document.getElementById('newEmpDay').value = emp.birthDay || '';
+            document.getElementById('newEmpBirthdayReminder').checked = emp.birthdayReminderEnabled !== false; // Default to true
             document.getElementById('addEmployeeModal').classList.add('show');
             document.getElementById('newEmpName').focus();
         }
@@ -1431,6 +1930,7 @@ const firebaseConfig = {
             document.getElementById('mainPage').classList.add('active');
             document.getElementById('employeeListPage').classList.remove('active');
             document.getElementById('auditLogPage').classList.remove('active');
+            document.getElementById('workHistoryPage').classList.remove('active');
             document.getElementById('dropdownMenu').classList.remove('show');
         }
 
@@ -1438,6 +1938,7 @@ const firebaseConfig = {
             document.getElementById('mainPage').classList.remove('active');
             document.getElementById('employeeListPage').classList.add('active');
             document.getElementById('auditLogPage').classList.remove('active');
+            document.getElementById('historyPage').classList.remove('active');
             document.getElementById('dropdownMenu').classList.remove('show');
             renderEmployeeList();
         }
@@ -1456,7 +1957,7 @@ const firebaseConfig = {
                 return `
                     <div class="employee-info-card">
                         <div class="info">
-                            <h3>${emp.name}${shouldShowBirthdayCake(emp.birthMonth, emp.birthDay) ? ' 🎂' : ''}</h3>
+                            <h3>${emp.name}${shouldShowBirthdayCake(emp.birthMonth, emp.birthDay, emp.birthdayReminderEnabled) ? ' 🎂' : ''}</h3>
                             <p>🎂 Birthday: ${birthday}</p>
                         </div>
                         <div class="actions">
@@ -1760,16 +2261,28 @@ const firebaseConfig = {
 
         function confirmClearAll() {
             const hiddenCount = employees.filter(e => e.status === 'hidden').length;
+            
+            // Stop all timers for working employees
+            employees.forEach((emp, index) => {
+                if (emp.status === 'working') {
+                    stopTimer(index);
+                    delete emp.workStartTime;
+                }
+            });
+            
+            // Clear all turns and statuses, unhide hidden employees
             employees = employees.map(emp => ({ 
                 ...emp, 
                 turn: null, 
-                status: emp.status === 'hidden' ? 'waiting' : emp.status // Unhide hidden employees
+                status: emp.status === 'hidden' ? 'waiting' : 'waiting', // Reset all to waiting
+                workStartTime: undefined
             }));
+            
             saveToHistory();
             render();
             hideClearModal();
             
-            addAuditLog('clear', `All turns and statuses cleared. ${hiddenCount} hidden employee(s) restored.`);
+            addAuditLog('clear', `All turns and statuses cleared. ${hiddenCount} hidden employee(s) restored. All working employees reset.`);
         }
 
         // ========================================
@@ -1805,7 +2318,7 @@ const firebaseConfig = {
             if (nextEmployee) {
                 nextBanner.innerHTML = `
                     <p>Next Turn:</p>
-                    <p class="name">${nextEmployee.name}${shouldShowBirthdayCake(nextEmployee.birthMonth, nextEmployee.birthDay) ? ' 🎂' : ''}</p>
+                    <p class="name">${nextEmployee.name}${shouldShowBirthdayCake(nextEmployee.birthMonth, nextEmployee.birthDay, nextEmployee.birthdayReminderEnabled) ? ' 🎂' : ''}</p>
                     <p class="turn">Turn #${nextEmployee.turn}</p>
                 `;
                 nextBanner.className = 'next-banner';
@@ -1815,16 +2328,16 @@ const firebaseConfig = {
             }
 
             // Working count
+            const currentlyWorking = working.length;
+            const workingToday = waitingWithNumbers.length + working.length;
             document.getElementById('workingCount').textContent = 
-                `Working Today: ${waitingWithNumbers.length + working.length}/${employees.length}`;
+                `Working Today: ${workingToday}/${employees.length} | Currently Working: ${currentlyWorking}`;
 
             // Employee list
             const list = document.getElementById('employeeList');
             list.innerHTML = displayList.map((emp, displayIdx) => {
                 // Find the actual index in the employees array
                 const actualIndex = employees.indexOf(emp);
-                
-                console.log(`Employee ${emp.name}: displayIdx=${displayIdx}, actualIndex=${actualIndex}`);
                 
                 return `
                     <div class="employee-row ${emp.status === 'working' ? 'working' : ''} ${editMode ? 'edit-mode-row' : ''}" 
@@ -1845,7 +2358,7 @@ const firebaseConfig = {
                             </div>
                         ` : ''}
                         <div class="employee-name">
-                            <span>${emp.name}${shouldShowBirthdayCake(emp.birthMonth, emp.birthDay) ? ' 🎂' : ''}</span>
+                            <span>${emp.name}${shouldShowBirthdayCake(emp.birthMonth, emp.birthDay, emp.birthdayReminderEnabled) ? ' 🎂' : ''}</span>
                             ${editMode ? `
                                 <button class="remove-btn" onclick="event.stopPropagation(); console.log('X clicked for index: ${actualIndex}'); removeEmployee(${actualIndex}); return false;">
                                     <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1855,7 +2368,7 @@ const firebaseConfig = {
                             ` : ''}
                         </div>
                         ${emp.status === 'working' ? `
-                            <span class="working-label">WORKING</span>
+                            <div class="timer-display ${getTimerClass(emp.workStartTime)}" data-timer-index="${actualIndex}">${getElapsedTime(emp.workStartTime)}</div>
                             <button class="btn-success" onclick="setDone(${actualIndex})">Done</button>
                         ` : `
                             <input type="number" class="turn-input" 
@@ -1877,7 +2390,7 @@ const firebaseConfig = {
                 summaryCard.style.display = 'block';
                 summaryList.innerHTML = summary.map(emp => `
                     <div class="summary-item">
-                        <span>${emp.name}${shouldShowBirthdayCake(emp.birthMonth, emp.birthDay) ? ' 🎂' : ''}</span>
+                        <span>${emp.name}${shouldShowBirthdayCake(emp.birthMonth, emp.birthDay, emp.birthdayReminderEnabled) ? ' 🎂' : ''}</span>
                         <span>${emp.status === 'working' ? 'WORKING' : '#' + emp.turn}</span>
                     </div>
                 `).join('');
