@@ -919,28 +919,6 @@
         </div>
     </div>
 
-    <!-- History Page -->
-    <div class="container page" id="historyPage">
-        <div class="card">
-            <div class="header">
-                <div class="title-group">
-                    <button class="btn-secondary" onclick="showMainPage()">← Back</button>
-                    <h1>📜 Work History</h1>
-                </div>
-                <button class="btn-danger btn-small" onclick="clearHistory()">Clear History</button>
-            </div>
-            
-            <div class="history-filters">
-                <input type="date" id="filterStartDate" class="date-filter" onchange="filterHistory()">
-                <span style="align-self: center;">to</span>
-                <input type="date" id="filterEndDate" class="date-filter" onchange="filterHistory()">
-                <button class="btn-primary btn-small" onclick="clearHistoryFilter()">Show All</button>
-            </div>
-            
-            <div id="historyList"></div>
-        </div>
-    </div>
-
     <!-- Work History Page -->
     <div class="container page" id="workHistoryPage">
         <div class="card">
@@ -1061,14 +1039,14 @@
         const EDIT_PASSCODE = "1314";
         
         // REPLACE WITH YOUR FIREBASE CONFIG
-const firebaseConfig = {
-  apiKey: "AIzaSyDDtDd7KrMcvPA-1QluxKQvco0sLa_kWdk",
-  authDomain: "nail-salon-d962b.firebaseapp.com",
-  projectId: "nail-salon-d962b",
-  storageBucket: "nail-salon-d962b.firebasestorage.app",
-  messagingSenderId: "1076505113914",
-  appId: "1:1076505113914:web:7a0a80d1cd4781357c8c03"
-};
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
 
         // ========================================
         // FIREBASE INITIALIZATION
@@ -1563,6 +1541,46 @@ const firebaseConfig = {
         });
 
         // ========================================
+        // DATA CLEANING HELPER
+        // ========================================
+        function cleanEmployeeData(employees) {
+            // Remove any undefined values from employee objects before saving to Firebase
+            return employees.map(emp => {
+                const cleaned = {
+                    name: emp.name || '',
+                    turn: emp.turn === undefined ? null : emp.turn,
+                    status: emp.status || 'waiting'
+                };
+                
+                // Only add birthday fields if they're not undefined
+                if (emp.birthMonth !== undefined) {
+                    cleaned.birthMonth = emp.birthMonth;
+                } else {
+                    cleaned.birthMonth = null;
+                }
+                
+                if (emp.birthDay !== undefined) {
+                    cleaned.birthDay = emp.birthDay;
+                } else {
+                    cleaned.birthDay = null;
+                }
+                
+                if (emp.birthdayReminderEnabled !== undefined) {
+                    cleaned.birthdayReminderEnabled = emp.birthdayReminderEnabled;
+                } else {
+                    cleaned.birthdayReminderEnabled = true;
+                }
+                
+                // Only include workStartTime if it exists and is not undefined
+                if (emp.workStartTime !== undefined && emp.workStartTime !== null) {
+                    cleaned.workStartTime = emp.workStartTime;
+                }
+                
+                return cleaned;
+            });
+        }
+
+        // ========================================
         // INITIALIZATION
         // ========================================
         function init() {
@@ -1615,8 +1633,11 @@ const firebaseConfig = {
         }
 
         async function saveData() {
+            // Clean employee data to remove any undefined values
+            const cleanedEmployees = cleanEmployeeData(employees);
+            
             const data = {
-                employees: employees,
+                employees: cleanedEmployees,
                 history: JSON.stringify(history),
                 historyIndex: historyIndex,
                 lastUpdated: new Date().toISOString()
@@ -1729,7 +1750,11 @@ const firebaseConfig = {
             const maxTurn = Math.max(0, ...employees.map(e => e.turn || 0));
             employee.status = 'waiting';
             employee.turn = maxTurn + 1;
-            delete employee.workStartTime;
+            
+            // Properly remove workStartTime property
+            if (employee.workStartTime !== undefined) {
+                delete employee.workStartTime;
+            }
             
             saveToHistory();
             render();
@@ -1887,7 +1912,7 @@ const firebaseConfig = {
             document.getElementById('settingsPage').classList.remove('active');
             document.getElementById('employeeListPage').classList.add('active');
             document.getElementById('auditLogPage').classList.remove('active');
-            document.getElementById('historyPage').classList.remove('active');
+            document.getElementById('workHistoryPage').classList.remove('active');
             document.getElementById('dropdownMenu').classList.remove('show');
             renderEmployeeList();
         }
@@ -2198,17 +2223,34 @@ const firebaseConfig = {
             });
             
             // Clear all turns and statuses, unhide hidden employees
-            // FIXED: Properly delete workStartTime instead of setting to undefined
+            // Create completely clean objects with NO undefined values
             employees = employees.map(emp => {
                 const cleaned = { 
                     name: emp.name,
                     turn: null, 
-                    status: 'waiting',
-                    birthMonth: emp.birthMonth,
-                    birthDay: emp.birthDay,
-                    birthdayReminderEnabled: emp.birthdayReminderEnabled
+                    status: 'waiting'
                 };
-                // Don't include workStartTime at all
+                
+                // Only add birthday fields if they exist and are not null/undefined
+                if (emp.birthMonth !== null && emp.birthMonth !== undefined) {
+                    cleaned.birthMonth = emp.birthMonth;
+                } else {
+                    cleaned.birthMonth = null;
+                }
+                
+                if (emp.birthDay !== null && emp.birthDay !== undefined) {
+                    cleaned.birthDay = emp.birthDay;
+                } else {
+                    cleaned.birthDay = null;
+                }
+                
+                // Handle birthday reminder setting
+                if (emp.birthdayReminderEnabled !== undefined) {
+                    cleaned.birthdayReminderEnabled = emp.birthdayReminderEnabled;
+                } else {
+                    cleaned.birthdayReminderEnabled = true;
+                }
+                
                 return cleaned;
             });
             
