@@ -790,6 +790,14 @@
         .toggle-switch.active .toggle-slider {
             transform: translateX(22px);
         }
+        .toggle-switch.disabled {
+            background-color: #e5e7eb;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        .toggle-switch.disabled .toggle-slider {
+            background-color: #d1d5db;
+        }
     </style>
 </head>
 <body>
@@ -877,6 +885,25 @@
                 <p style="color: #6b7280; font-size: 13px; margin-top: 8px; padding: 0 12px;">
                     When disabled, timer will still track in background for work history but won't be displayed on the main page.
                 </p>
+            </div>
+
+            <div class="settings-section">
+                <h3>Data Sync</h3>
+                <div class="toggle-container">
+                    <div class="toggle-label">
+                        <span>☁️</span>
+                        <span>Firebase Cloud Sync</span>
+                    </div>
+                    <div class="toggle-switch" id="syncToggle" onclick="toggleSyncMode()">
+                        <div class="toggle-slider"></div>
+                    </div>
+                </div>
+                <p style="color: #6b7280; font-size: 13px; margin-top: 8px; padding: 0 12px;" id="syncDescription">
+                    When disabled, all data is saved locally only. Enable to sync data across devices via Firebase.
+                </p>
+                <div id="firebaseStatus" style="margin-top: 12px; padding: 12px; background: #f3f4f6; border-radius: 8px; font-size: 13px;">
+                    <strong>Status:</strong> <span id="firebaseStatusText">Checking...</span>
+                </div>
             </div>
         </div>
     </div>
@@ -1053,6 +1080,7 @@ const firebaseConfig = {
         // ========================================
         let db = null;
         let firebaseEnabled = false;
+        let firebaseListener = null; // Store listener so we can unsubscribe
 
         try {
             if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
@@ -1102,6 +1130,7 @@ const firebaseConfig = {
         let timerIntervals = {};
         let startTimes = {};
         let showTimer = true; // New setting for timer visibility
+        let syncEnabled = true; // New setting for Firebase sync on/off
 
 
         // ========================================
@@ -1112,13 +1141,16 @@ const firebaseConfig = {
             if (savedSettings) {
                 const settings = JSON.parse(savedSettings);
                 showTimer = settings.showTimer !== undefined ? settings.showTimer : true;
+                syncEnabled = settings.syncEnabled !== undefined ? settings.syncEnabled : true;
             }
             updateTimerToggle();
+            updateSyncToggle();
         }
 
         function saveSettings() {
             const settings = {
-                showTimer: showTimer
+                showTimer: showTimer,
+                syncEnabled: syncEnabled
             };
             localStorage.setItem('nailSalonSettings', JSON.stringify(settings));
         }
@@ -1140,6 +1172,63 @@ const firebaseConfig = {
             }
         }
 
+        function toggleSyncMode() {
+            // Don't allow toggling if Firebase is not configured
+            if (!firebaseEnabled) {
+                alert('Firebase is not configured. Please set up your Firebase credentials in the code to enable cloud sync.');
+                return;
+            }
+            
+            syncEnabled = !syncEnabled;
+            saveSettings();
+            updateSyncToggle();
+            
+            if (syncEnabled && firebaseEnabled) {
+                // Re-enable sync and start listener
+                startFirebaseListener();
+                addAuditLog('working', 'Firebase sync enabled');
+            } else {
+                // Disable sync and stop listener
+                if (firebaseListener) {
+                    firebaseListener(); // Call unsubscribe function
+                    firebaseListener = null;
+                }
+                updateSyncStatus('offline');
+                addAuditLog('working', 'Firebase sync disabled - working offline');
+            }
+        }
+
+        function updateSyncToggle() {
+            const toggle = document.getElementById('syncToggle');
+            if (toggle) {
+                // Remove all state classes first
+                toggle.classList.remove('active', 'disabled');
+                
+                if (!firebaseEnabled) {
+                    toggle.classList.add('disabled');
+                } else if (syncEnabled) {
+                    toggle.classList.add('active');
+                }
+            }
+            updateFirebaseStatus();
+        }
+
+        function updateFirebaseStatus() {
+            const statusText = document.getElementById('firebaseStatusText');
+            if (!statusText) return;
+            
+            if (!firebaseEnabled) {
+                statusText.innerHTML = '🔴 <strong>Not Configured</strong> - Firebase credentials not set up';
+                statusText.style.color = '#dc2626';
+            } else if (syncEnabled) {
+                statusText.innerHTML = '🟢 <strong>Syncing</strong> - Data syncing to cloud';
+                statusText.style.color = '#059669';
+            } else {
+                statusText.innerHTML = '🟡 <strong>Offline Mode</strong> - Sync disabled, data saved locally only';
+                statusText.style.color = '#d97706';
+            }
+        }
+
         function showSettings() {
             document.getElementById('mainPage').classList.remove('active');
             document.getElementById('settingsPage').classList.add('active');
@@ -1147,6 +1236,7 @@ const firebaseConfig = {
             document.getElementById('auditLogPage').classList.remove('active');
             document.getElementById('workHistoryPage').classList.remove('active');
             document.getElementById('dropdownMenu').classList.remove('show');
+            updateFirebaseStatus();
         }
 
         // ========================================
@@ -1581,6 +1671,39 @@ const firebaseConfig = {
         }
 
         // ========================================
+        // FIREBASE LISTENER
+        // ========================================
+        function startFirebaseListener() {
+            if (!firebaseEnabled || !syncEnabled) {
+                return;
+            }
+            
+            // Stop existing listener if any
+            if (firebaseListener) {
+                firebaseListener();
+                firebaseListener = null;
+            }
+            
+            updateSyncStatus('saving');
+            firebaseListener = db.collection('nailSalon').doc('data').onSnapshot((doc) => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    employees = data.employees || employees;
+                    history = data.history ? JSON.parse(data.history) : [employees];
+                    historyIndex = data.historyIndex || 0;
+                    updateSyncStatus('synced');
+                    render();
+                } else {
+                    console.log('Creating initial Firebase document...');
+                    saveData();
+                }
+            }, (error) => {
+                console.error('Firebase sync error:', error);
+                updateSyncStatus('error');
+            });
+        }
+
+        // ========================================
         // INITIALIZATION
         // ========================================
         function init() {
@@ -1595,24 +1718,9 @@ const firebaseConfig = {
                 }
             });
             
-            if (firebaseEnabled) {
-                updateSyncStatus('saving');
-                db.collection('nailSalon').doc('data').onSnapshot((doc) => {
-                    if (doc.exists) {
-                        const data = doc.data();
-                        employees = data.employees || employees;
-                        history = data.history ? JSON.parse(data.history) : [employees];
-                        historyIndex = data.historyIndex || 0;
-                        updateSyncStatus('synced');
-                        render();
-                    } else {
-                        console.log('Creating initial Firebase document...');
-                        saveData();
-                    }
-                }, (error) => {
-                    console.error('Firebase sync error:', error);
-                    updateSyncStatus('error');
-                });
+            // Only set up Firebase sync if both Firebase is enabled AND user has sync enabled
+            if (firebaseEnabled && syncEnabled) {
+                startFirebaseListener();
             } else {
                 updateSyncStatus('offline');
             }
@@ -1649,7 +1757,8 @@ const firebaseConfig = {
                 historyIndex: historyIndex
             }));
 
-            if (firebaseEnabled) {
+            // Only sync to Firebase if both Firebase is enabled AND user has sync enabled
+            if (firebaseEnabled && syncEnabled) {
                 try {
                     updateSyncStatus('saving');
                     await db.collection('nailSalon').doc('data').set(data);
@@ -1658,6 +1767,9 @@ const firebaseConfig = {
                     console.error('Firebase save error:', error);
                     updateSyncStatus('error');
                 }
+            } else if (!syncEnabled) {
+                // User has disabled sync
+                updateSyncStatus('offline');
             }
         }
 
@@ -1676,7 +1788,13 @@ const firebaseConfig = {
             } else if (status === 'error') {
                 textEl.textContent = '❌ Sync error - Check console for details';
             } else if (status === 'offline') {
-                textEl.textContent = '💾 Offline mode - localStorage only';
+                if (!firebaseEnabled) {
+                    textEl.textContent = '💾 Offline - Firebase not configured';
+                } else if (!syncEnabled) {
+                    textEl.textContent = '💾 Offline - Sync disabled by user';
+                } else {
+                    textEl.textContent = '💾 Offline mode - localStorage only';
+                }
             }
         }
 
