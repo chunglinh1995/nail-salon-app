@@ -857,7 +857,7 @@
         </div>
 
         <div class="update-banner">
-            📱 <a href="https://chungling1995.github.io/nail-salon-app/" target="_blank">Download Latest Version</a>
+            📱 <a href="https://github.com/chunglinh1995/nail-salon-app/releases/download/NEW/TurnManager.apk" target="_blank">Download Latest Version</a>
         </div>
     </div>
 
@@ -1362,7 +1362,6 @@ const firebaseConfig = {
             document.getElementById('mainPage').classList.remove('active');
             document.getElementById('settingsPage').classList.remove('active');
             document.getElementById('employeeListPage').classList.remove('active');
-            document.getElementById('historyPage').classList.remove('active');
             document.getElementById('auditLogPage').classList.add('active');
             document.getElementById('workHistoryPage').classList.remove('active');
             document.getElementById('dropdownMenu').classList.remove('show');
@@ -1688,11 +1687,25 @@ const firebaseConfig = {
             firebaseListener = db.collection('nailSalon').doc('data').onSnapshot((doc) => {
                 if (doc.exists) {
                     const data = doc.data();
-                    employees = data.employees || employees;
-                    history = data.history ? JSON.parse(data.history) : [employees];
-                    historyIndex = data.historyIndex || 0;
+                    // Only sync employees data from Firebase, not history
+                    // History is managed locally to avoid size limits and preserve full undo/redo
+                    const receivedEmployees = data.employees || employees;
+                    
+                    // Only update if data actually changed (avoid triggering on our own saves)
+                    if (JSON.stringify(receivedEmployees) !== JSON.stringify(employees)) {
+                        employees = receivedEmployees;
+                        
+                        // Save to localStorage but don't trigger another Firebase save
+                        localStorage.setItem('nailSalonData', JSON.stringify({
+                            employees: employees,
+                            history: history,
+                            historyIndex: historyIndex
+                        }));
+                        
+                        render();
+                    }
+                    
                     updateSyncStatus('synced');
-                    render();
                 } else {
                     console.log('Creating initial Firebase document...');
                     saveData();
@@ -1744,13 +1757,20 @@ const firebaseConfig = {
             // Clean employee data to remove any undefined values
             const cleanedEmployees = cleanEmployeeData(employees);
             
+            // Limit history size for Firebase to prevent document size limit (1MB max)
+            // Keep only the last 20 history states for undo/redo in cloud
+            // Full history is preserved in localStorage
+            const limitedHistory = history.slice(Math.max(0, history.length - 20));
+            const adjustedHistoryIndex = historyIndex - Math.max(0, history.length - 20);
+            
             const data = {
                 employees: cleanedEmployees,
-                history: JSON.stringify(history),
-                historyIndex: historyIndex,
+                history: JSON.stringify(limitedHistory),
+                historyIndex: adjustedHistoryIndex >= 0 ? adjustedHistoryIndex : 0,
                 lastUpdated: new Date().toISOString()
             };
 
+            // Save FULL history to localStorage (no size limit concerns)
             localStorage.setItem('nailSalonData', JSON.stringify({
                 employees: employees,
                 history: history,
@@ -1805,6 +1825,16 @@ const firebaseConfig = {
             history = history.slice(0, historyIndex + 1);
             history.push(JSON.parse(JSON.stringify(employees)));
             historyIndex = history.length - 1;
+            
+            // Limit history to last 100 entries to prevent localStorage from growing too large
+            // This still provides plenty of undo/redo capability
+            if (history.length > 100) {
+                const removeCount = history.length - 100;
+                history = history.slice(removeCount);
+                historyIndex = historyIndex - removeCount;
+                if (historyIndex < 0) historyIndex = 0;
+            }
+            
             updateButtons();
             saveData();
         }
