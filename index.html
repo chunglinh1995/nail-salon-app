@@ -100,6 +100,10 @@
         .btn-primary:hover:not(:disabled) {
             background: #2563eb;
         }
+        .btn-primary.active {
+            background: #1d4ed8;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
         .btn-danger {
             background: #ef4444;
             color: white;
@@ -120,6 +124,12 @@
         }
         .btn-warning:hover {
             background: #d97706;
+        }
+        .btn-action {
+            padding: 14px 20px !important;
+            font-size: 16px !important;
+            font-weight: 700 !important;
+            min-width: 110px;
         }
         .btn-edit {
             background: #f59e0b;
@@ -335,32 +345,6 @@
             font-weight: bold;
             color: #d97706;
             padding: 0 12px;
-        }
-        .summary-card {
-            margin-top: 16px;
-        }
-        .summary-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .summary-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px;
-            background: #eff6ff;
-            border-radius: 8px;
-        }
-        .summary-item span:first-child {
-            font-size: 16px;
-            font-weight: 600;
-            color: #1f2937;
-        }
-        .summary-item span:last-child {
-            font-size: 20px;
-            font-weight: bold;
-            color: #3b82f6;
         }
         .update-banner {
             background: #10b981;
@@ -809,7 +793,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                     </svg>
                     <div>
-                        <h1>Employee Turns V22</h1>
+                        <h1>Employee Turns V23</h1>
                         <div class="sync-status">
                             <svg class="sync-icon offline" id="syncIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
@@ -826,7 +810,6 @@
                         <div class="dropdown-content" id="dropdownMenu">
                             <button onclick="showSettings()">⚙️ Settings</button>
                             <button onclick="showEmployeeList()">👥 Employee List</button>
-                            <button onclick="showAddEmployeeModal()">➕ Add New Employee</button>
                             <button onclick="showWorkHistory()">🕐 Work History</button>
                             <button onclick="showAuditLog()">📋 Audit Log</button>
                         </div>
@@ -851,13 +834,8 @@
             <div class="employee-list" id="employeeList"></div>
         </div>
 
-        <div class="card summary-card" id="summaryCard" style="display:none;">
-            <h2 style="font-size: 20px; color: #1f2937; margin-bottom: 16px;">Working Today</h2>
-            <div class="summary-list" id="summaryList"></div>
-        </div>
-
         <div class="update-banner">
-            📱 <a href="https://github.com/chunglinh1995/nail-salon-app/releases/download/NEW/TurnManager.apk" target="_blank">Download Latest Version</a>
+            📱 <a href="https://chungling1995.github.io/nail-salon-app/" target="_blank">Download Latest Version</a>
         </div>
     </div>
 
@@ -1881,6 +1859,15 @@ const firebaseConfig = {
             addAuditLog('turn', `${employees[index].name}: Turn changed from ${oldText} to ${turnText}`);
         }
 
+        function clockIn(index) {
+            const maxTurn = Math.max(0, ...employees.map(e => e.turn || 0));
+            employees[index].turn = maxTurn + 1;
+            employees[index].status = 'waiting';
+            saveToHistory();
+            render();
+            addAuditLog('turn', `${employees[index].name}: Clocked in with turn #${maxTurn + 1}`);
+        }
+
         function setWorking(index) {
             employees[index].status = 'working';
             employees[index].turn = null;
@@ -2486,33 +2473,21 @@ const firebaseConfig = {
                         </div>
                         ${emp.status === 'working' ? `
                             ${showTimer ? `<div class="timer-display ${getTimerClass(emp.workStartTime)}" data-timer-index="${actualIndex}">${getElapsedTime(emp.workStartTime)}</div>` : ''}
-                            <button class="btn-success" onclick="setDone(${actualIndex})">Done</button>
+                            <button class="btn-success btn-action" onclick="setDone(${actualIndex})">Done</button>
                         ` : `
                             <input type="number" class="turn-input" 
                                 value="${emp.turn === null ? '' : emp.turn}" 
                                 placeholder="--"
                                 onchange="setTurn(${actualIndex}, this.value)">
-                            <button class="btn-warning" onclick="setWorking(${actualIndex})">Working</button>
+                            ${emp.turn === null ? `
+                                <button class="btn-success btn-action" onclick="clockIn(${actualIndex})">Clock-in</button>
+                            ` : `
+                                <button class="btn-warning btn-action" onclick="setWorking(${actualIndex})">Working</button>
+                            `}
                         `}
                     </div>
                 `;
             }).join('');
-
-            const summary = [...waitingWithNumbers, ...working];
-            const summaryCard = document.getElementById('summaryCard');
-            const summaryList = document.getElementById('summaryList');
-            
-            if (summary.length > 0) {
-                summaryCard.style.display = 'block';
-                summaryList.innerHTML = summary.map(emp => `
-                    <div class="summary-item">
-                        <span>${emp.name}${shouldShowBirthdayCake(emp.birthMonth, emp.birthDay, emp.birthdayReminderEnabled) ? ' 🎂' : ''}</span>
-                        <span>${emp.status === 'working' ? 'WORKING' : '#' + emp.turn}</span>
-                    </div>
-                `).join('');
-            } else {
-                summaryCard.style.display = 'none';
-            }
 
             updateButtons();
             
