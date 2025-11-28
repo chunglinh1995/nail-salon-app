@@ -1044,14 +1044,14 @@
         const EDIT_PASSCODE = "1314";
         
         // REPLACE WITH YOUR FIREBASE CONFIG
-const firebaseConfig = {
-  apiKey: "AIzaSyDDtDd7KrMcvPA-1QluxKQvco0sLa_kWdk",
-  authDomain: "nail-salon-d962b.firebaseapp.com",
-  projectId: "nail-salon-d962b",
-  storageBucket: "nail-salon-d962b.firebasestorage.app",
-  messagingSenderId: "1076505113914",
-  appId: "1:1076505113914:web:7a0a80d1cd4781357c8c03"
-};
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
 
         // ========================================
         // FIREBASE INITIALIZATION
@@ -1680,56 +1680,63 @@ const firebaseConfig = {
                         return;
                     }
                     
-                    // Only sync employees data from Firebase, not history
-                    const receivedEmployees = data.employees || employees;
-                    const remoteTimestamp = data.lastUpdated ? new Date(data.lastUpdated).getTime() : 0;
+                    // Get timestamps for document-level comparison
+                    const remoteTimestamp = data.timestamp || 0;
                     
-                    // If remote data is older than our last local update, ignore it
-                    if (remoteTimestamp < lastLocalUpdate) {
-                        console.log('⏭️ Ignoring older Firebase data (local is newer)');
+                    // Get our last sync timestamp from localStorage
+                    const localData = localStorage.getItem('nailSalonData');
+                    let localTimestamp = 0;
+                    if (localData) {
+                        const parsed = JSON.parse(localData);
+                        localTimestamp = parsed.lastSyncTimestamp || 0;
+                    }
+                    
+                    console.log(`📊 Timestamp comparison: Remote=${remoteTimestamp}, Local=${localTimestamp}, Diff=${remoteTimestamp - localTimestamp}ms`);
+                    
+                    // If remote timestamp is older or equal to local, ignore it
+                    if (remoteTimestamp <= localTimestamp) {
+                        console.log('⏭️ Ignoring Firebase data (local is same or newer)');
                         updateSyncStatus('synced');
                         return;
                     }
                     
-                    // Smart merge: compare each employee by timestamp
-                    let hasChanges = false;
-                    const mergedEmployees = employees.map((localEmp, index) => {
-                        const remoteEmp = receivedEmployees[index];
-                        
-                        // If no remote employee or same name, compare timestamps
-                        if (!remoteEmp || remoteEmp.name !== localEmp.name) {
-                            return localEmp; // Keep local if structure differs
-                        }
-                        
-                        const localTime = localEmp.lastUpdated || 0;
-                        const remoteTime = remoteEmp.lastUpdated || 0;
-                        
-                        // If remote is newer, use remote data
-                        if (remoteTime > localTime) {
-                            hasChanges = true;
-                            console.log(`📥 Accepting newer data for ${remoteEmp.name} from Firebase`);
-                            return remoteEmp;
-                        }
-                        
-                        // Otherwise keep local
-                        return localEmp;
-                    });
+                    // Remote data is newer - accept it
+                    const receivedEmployees = data.employees || employees;
                     
-                    // Only update if there are actual changes
-                    if (hasChanges) {
-                        console.log('🔄 Applying Firebase updates');
-                        employees = mergedEmployees;
-                        
-                        // Save to localStorage but don't trigger another Firebase save
+                    // Check if data actually changed
+                    if (JSON.stringify(receivedEmployees) === JSON.stringify(employees)) {
+                        console.log('✓ Data is identical, no update needed');
+                        // Update our local sync timestamp even if data is same
                         localStorage.setItem('nailSalonData', JSON.stringify({
                             employees: employees,
                             history: history,
-                            historyIndex: historyIndex
+                            historyIndex: historyIndex,
+                            lastSyncTimestamp: remoteTimestamp
                         }));
-                        
-                        render();
+                        updateSyncStatus('synced');
+                        return;
                     }
                     
+                    // Apply remote changes
+                    console.log('📥 Accepting newer data from Firebase');
+                    employees = receivedEmployees;
+                    
+                    // Restart any active timers
+                    employees.forEach((emp, index) => {
+                        if (emp.status === 'working' && emp.workStartTime) {
+                            startTimer(index);
+                        }
+                    });
+                    
+                    // Save to localStorage with updated sync timestamp
+                    localStorage.setItem('nailSalonData', JSON.stringify({
+                        employees: employees,
+                        history: history,
+                        historyIndex: historyIndex,
+                        lastSyncTimestamp: remoteTimestamp
+                    }));
+                    
+                    render();
                     updateSyncStatus('synced');
                 } else {
                     console.log('Creating initial Firebase document...');
@@ -1788,18 +1795,23 @@ const firebaseConfig = {
             const limitedHistory = history.slice(Math.max(0, history.length - 20));
             const adjustedHistoryIndex = historyIndex - Math.max(0, history.length - 20);
             
+            const now = new Date().toISOString();
+            const timestamp = Date.now();
+            
             const data = {
                 employees: cleanedEmployees,
                 history: JSON.stringify(limitedHistory),
                 historyIndex: adjustedHistoryIndex >= 0 ? adjustedHistoryIndex : 0,
-                lastUpdated: new Date().toISOString()
+                lastUpdated: now,
+                timestamp: timestamp  // Add numeric timestamp for easy comparison
             };
 
             // Save FULL history to localStorage (no size limit concerns)
             localStorage.setItem('nailSalonData', JSON.stringify({
                 employees: employees,
                 history: history,
-                historyIndex: historyIndex
+                historyIndex: historyIndex,
+                lastSyncTimestamp: timestamp  // Track when we last synced
             }));
 
             // Only sync to Firebase if both Firebase is enabled AND user has sync enabled
@@ -1808,6 +1820,7 @@ const firebaseConfig = {
                     updateSyncStatus('saving');
                     await db.collection('nailSalon').doc('data').set(data);
                     updateSyncStatus('synced');
+                    console.log(`✅ Saved to Firebase with timestamp: ${timestamp}`);
                 } catch (error) {
                     console.error('Firebase save error:', error);
                     updateSyncStatus('error');
