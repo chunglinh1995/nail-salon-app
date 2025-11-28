@@ -9,6 +9,7 @@
     <meta name="theme-color" content="#3b82f6">
     <link rel="manifest" href="/nail-salon-app/manifest.json">
     <title>Nail Salon Turn Manager</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23ec4899'/%3E%3Cpath d='M30 40 L50 30 L70 40 L70 65 C70 72 65 75 50 75 C35 75 30 72 30 65 Z' fill='%23f9a8d4'/%3E%3Crect x='45' y='28' width='10' height='15' rx='2' fill='%23e879f9'/%3E%3Cellipse cx='50' cy='55' rx='15' ry='12' fill='white' opacity='0.3'/%3E%3C/svg%3E">
     <style>
         * {
             margin: 0;
@@ -126,10 +127,11 @@
             background: #d97706;
         }
         .btn-action {
-            padding: 18px 20px !important;
-            font-size: 16px !important;
+            padding: 18px 24px !important;
+            font-size: 17px !important;
             font-weight: 700 !important;
-            min-width: 110px;
+            min-width: 120px;
+            min-height: 56px;
         }
         .btn-edit {
             background: #f59e0b;
@@ -284,6 +286,31 @@
         .employee-row.working {
             background: #fef3c7;
             border-color: #fbbf24;
+        }
+        .employee-row.half-turn {
+            background: #dbeafe;
+            border-color: #93c5fd;
+        }
+        .half-turn-btn {
+            padding: 6px 10px;
+            background: #e0f2fe;
+            color: #0369a1;
+            border: 2px solid #bae6fd;
+            border-radius: 6px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 40px;
+            min-height: 40px;
+        }
+        .half-turn-btn:hover {
+            background: #bae6fd;
+            border-color: #0369a1;
+        }
+        .half-turn-btn.active {
+            background: #0369a1;
+            color: white;
+            border-color: #0369a1;
         }
         .employee-row.edit-mode-row {
             touch-action: none;
@@ -793,7 +820,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                     </svg>
                     <div>
-                        <h1>Employee Turns V24</h1>
+                        <h1>Employee Turns V26</h1>
                         <div class="sync-status">
                             <svg class="sync-icon offline" id="syncIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
@@ -883,6 +910,27 @@
                     <strong>Status:</strong> <span id="firebaseStatusText">Checking...</span>
                 </div>
             </div>
+
+            <div class="settings-section">
+                <h3>Security</h3>
+                <div style="padding: 12px;">
+                    <p style="color: #6b7280; font-size: 13px; margin-bottom: 12px;">
+                        Change your passcode for Edit Mode access. Syncs to Firebase if enabled.
+                    </p>
+                    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                        <input type="password" 
+                               id="newPasscodeInput" 
+                               class="passcode-input"
+                               placeholder="New 4-digit code"
+                               maxlength="4"
+                               inputmode="numeric"
+                               pattern="[0-9]*"
+                               style="flex: 1; min-width: 150px;">
+                        <button class="btn-primary" onclick="changePasscode()">Update Passcode</button>
+                    </div>
+                    <div id="passcodeChangeMessage" style="margin-top: 8px; font-size: 13px; display: none;"></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -949,19 +997,19 @@
     <!-- Passcode Modal -->
     <div class="modal" id="passcodeModal">
         <div class="modal-content">
-            <h3>🔒 Enter Passcode</h3>
-            <p>Enter passcode to access Edit Mode</p>
+            <h3 id="passcodeModalTitle">🔒 Enter Passcode</h3>
+            <p id="passcodeModalText">Enter passcode to access Edit Mode</p>
             <input type="password" 
                    id="passcodeInput" 
                    class="passcode-input"
                    placeholder="****"
                    maxlength="4"
                    inputmode="numeric"
-                   pattern="[0-9]*">
+                   pattern="[0-9]*"
+                   oninput="if(this.value.length === 4) checkPasscode()">
             <div id="passcodeError" class="error-message" style="display:none;">Incorrect passcode. Please try again.</div>
             <div class="modal-buttons">
                 <button class="btn-secondary" onclick="hidePasscodeModal()">Cancel</button>
-                <button class="btn-success" onclick="checkPasscode()">Unlock</button>
             </div>
         </div>
     </div>
@@ -1041,7 +1089,8 @@
         // CONFIGURATION
         // ========================================
         
-        const EDIT_PASSCODE = "1314";
+        let EDIT_PASSCODE = "1314";
+        let passcodeMode = 'edit'; // 'edit' or 'settings'
         
         // REPLACE WITH YOUR FIREBASE CONFIG
 const firebaseConfig = {
@@ -1210,13 +1259,7 @@ const firebaseConfig = {
         }
 
         function showSettings() {
-            document.getElementById('mainPage').classList.remove('active');
-            document.getElementById('settingsPage').classList.add('active');
-            document.getElementById('employeeListPage').classList.remove('active');
-            document.getElementById('auditLogPage').classList.remove('active');
-            document.getElementById('workHistoryPage').classList.remove('active');
-            document.getElementById('dropdownMenu').classList.remove('show');
-            updateFirebaseStatus();
+            showPasscodeModal('settings');
         }
 
         // ========================================
@@ -1530,8 +1573,21 @@ const firebaseConfig = {
         // ========================================
         // PASSCODE FUNCTIONS
         // ========================================
-        function showPasscodeModal() {
-            document.getElementById('passcodeModal').classList.add('show');
+        function showPasscodeModal(mode = 'edit') {
+            passcodeMode = mode;
+            const modal = document.getElementById('passcodeModal');
+            const title = document.getElementById('passcodeModalTitle');
+            const text = document.getElementById('passcodeModalText');
+            
+            if (mode === 'settings') {
+                title.textContent = '⚙️ Enter Passcode';
+                text.textContent = 'Enter passcode to access Settings';
+            } else {
+                title.textContent = '🔒 Enter Passcode';
+                text.textContent = 'Enter passcode to access Edit Mode';
+            }
+            
+            modal.classList.add('show');
             document.getElementById('passcodeInput').value = '';
             document.getElementById('passcodeError').style.display = 'none';
             setTimeout(() => {
@@ -1549,13 +1605,71 @@ const firebaseConfig = {
             const input = document.getElementById('passcodeInput').value;
             if (input === EDIT_PASSCODE) {
                 hidePasscodeModal();
-                toggleEditMode();
-                addAuditLog('working', 'Edit mode activated');
+                if (passcodeMode === 'settings') {
+                    openSettingsPage();
+                } else {
+                    toggleEditMode();
+                    addAuditLog('working', 'Edit mode activated');
+                }
             } else {
                 document.getElementById('passcodeError').style.display = 'block';
                 document.getElementById('passcodeInput').value = '';
                 document.getElementById('passcodeInput').focus();
             }
+        }
+
+        function openSettingsPage() {
+            document.getElementById('mainPage').classList.remove('active');
+            document.getElementById('settingsPage').classList.add('active');
+            document.getElementById('employeeListPage').classList.remove('active');
+            document.getElementById('auditLogPage').classList.remove('active');
+            document.getElementById('workHistoryPage').classList.remove('active');
+            document.getElementById('dropdownMenu').classList.remove('show');
+            updateFirebaseStatus();
+        }
+
+        async function changePasscode() {
+            const newCode = document.getElementById('newPasscodeInput').value;
+            const messageEl = document.getElementById('passcodeChangeMessage');
+            
+            if (newCode.length !== 4 || !/^\d{4}$/.test(newCode)) {
+                messageEl.textContent = '❌ Passcode must be exactly 4 digits';
+                messageEl.style.color = '#ef4444';
+                messageEl.style.display = 'block';
+                return;
+            }
+            
+            EDIT_PASSCODE = newCode;
+            
+            // Save to localStorage
+            localStorage.setItem('editPasscode', newCode);
+            
+            // Sync to Firebase if enabled
+            if (firebaseEnabled && syncEnabled) {
+                try {
+                    await db.collection('nailSalon').doc('settings').set({
+                        passcode: newCode,
+                        lastUpdated: new Date().toISOString()
+                    });
+                    messageEl.textContent = '✅ Passcode updated and synced to cloud';
+                } catch (error) {
+                    console.error('Error syncing passcode:', error);
+                    messageEl.textContent = '✅ Passcode updated locally (cloud sync failed)';
+                }
+            } else {
+                messageEl.textContent = '✅ Passcode updated locally';
+            }
+            
+            messageEl.style.color = '#10b981';
+            messageEl.style.display = 'block';
+            document.getElementById('newPasscodeInput').value = '';
+            
+            addAuditLog('working', 'Passcode changed');
+            
+            // Hide message after 3 seconds
+            setTimeout(() => {
+                messageEl.style.display = 'none';
+            }, 3000);
         }
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -1642,6 +1756,13 @@ const firebaseConfig = {
                     cleaned.birthdayReminderEnabled = emp.birthdayReminderEnabled;
                 } else {
                     cleaned.birthdayReminderEnabled = true;
+                }
+                
+                // Handle halfTurn field
+                if (emp.halfTurn !== undefined) {
+                    cleaned.halfTurn = emp.halfTurn;
+                } else {
+                    cleaned.halfTurn = false;
                 }
                 
                 // Only include workStartTime if it exists and is not undefined
@@ -1756,6 +1877,7 @@ const firebaseConfig = {
             loadAuditLog();
             loadWorkHistory();
             loadSettings();
+            loadPasscode();
             
             employees.forEach((emp, index) => {
                 if (emp.status === 'working' && emp.workStartTime) {
@@ -1766,8 +1888,34 @@ const firebaseConfig = {
             // Only set up Firebase sync if both Firebase is enabled AND user has sync enabled
             if (firebaseEnabled && syncEnabled) {
                 startFirebaseListener();
+                loadPasscodeFromFirebase();
             } else {
                 updateSyncStatus('offline');
+            }
+        }
+
+        function loadPasscode() {
+            const saved = localStorage.getItem('editPasscode');
+            if (saved) {
+                EDIT_PASSCODE = saved;
+            }
+        }
+
+        async function loadPasscodeFromFirebase() {
+            if (!firebaseEnabled) return;
+            
+            try {
+                const doc = await db.collection('nailSalon').doc('settings').get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    if (data.passcode) {
+                        EDIT_PASSCODE = data.passcode;
+                        localStorage.setItem('editPasscode', data.passcode);
+                        console.log('✅ Passcode loaded from Firebase');
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading passcode from Firebase:', error);
             }
         }
 
@@ -1949,6 +2097,7 @@ const firebaseConfig = {
             
             employees[index].status = 'working';
             employees[index].turn = null;
+            employees[index].halfTurn = false;  // Reset half-turn when working
             employees[index].lastUpdated = now;
             
             // Lock sync for 2 seconds to prevent immediate overwrite
@@ -1984,6 +2133,24 @@ const firebaseConfig = {
             
             saveToHistory();
             render();
+        }
+
+        function toggleHalfTurn(index) {
+            const now = Date.now();
+            
+            // Toggle half-turn status
+            employees[index].halfTurn = !employees[index].halfTurn;
+            employees[index].lastUpdated = now;
+            
+            // Lock sync for 2 seconds to prevent immediate overwrite
+            lastLocalUpdate = now;
+            syncLockUntil = now + 2000;
+            
+            saveToHistory();
+            render();
+            
+            const status = employees[index].halfTurn ? 'marked as half turn' : 'unmarked as half turn';
+            addAuditLog('turn', `${employees[index].name}: ${status}`);
         }
 
         function addEmployee() {
@@ -2059,6 +2226,7 @@ const firebaseConfig = {
                     name: name, 
                     turn: null, 
                     status: 'waiting',
+                    halfTurn: false,
                     birthMonth: month || null,
                     birthDay: day || null,
                     birthdayReminderEnabled: birthdayReminderEnabled,
@@ -2470,6 +2638,7 @@ const firebaseConfig = {
                     name: emp.name,
                     turn: null, 
                     status: 'waiting',
+                    halfTurn: false,
                     lastUpdated: now
                 };
                 
@@ -2555,7 +2724,7 @@ const firebaseConfig = {
                 const actualIndex = employees.indexOf(emp);
                 
                 return `
-                    <div class="employee-row ${emp.status === 'working' ? 'working' : ''} ${editMode ? 'edit-mode-row' : ''}" 
+                    <div class="employee-row ${emp.status === 'working' ? 'working' : ''} ${emp.halfTurn ? 'half-turn' : ''} ${editMode ? 'edit-mode-row' : ''}" 
                         data-actual-index="${actualIndex}"
                         data-display-index="${displayIdx}"
                         draggable="${editMode ? 'true' : 'false'}" 
@@ -2586,6 +2755,11 @@ const firebaseConfig = {
                             ${showTimer ? `<div class="timer-display ${getTimerClass(emp.workStartTime)}" data-timer-index="${actualIndex}">${getElapsedTime(emp.workStartTime)}</div>` : ''}
                             <button class="btn-success btn-action" onclick="setDone(${actualIndex})">Done</button>
                         ` : `
+                            ${!editMode && emp.turn !== null ? `
+                                <button class="half-turn-btn ${emp.halfTurn ? 'active' : ''}" onclick="toggleHalfTurn(${actualIndex})" title="Mark as half turn">
+                                    ${emp.halfTurn ? '✓' : '½'}
+                                </button>
+                            ` : ''}
                             <input type="number" class="turn-input" 
                                 value="${emp.turn === null ? '' : emp.turn}" 
                                 placeholder="--"
